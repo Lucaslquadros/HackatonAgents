@@ -128,6 +128,16 @@ suficiente pra justificar ainda).
   (`/enquadrar <pdf>`), como verificar que está saudável (os 2 critérios de
   aceite testados nos bolts 3 e 4), e o changelog desta primeira versão.
 - **Entregável:** `OPERATIONS.md` preenchido.
+- **O que ficou registrado:** como rodar (`/enquadrar`, incluindo a
+  limitação real de que o comando só é descoberto com `cwd` dentro de
+  `agente-enquadrador/` — todos os 7 testes até agora rodaram com o prompt
+  seguido manualmente, não o comando de barra de fato disparado), como
+  rodar os testes (coleção + painel), checklist de saúde com os 8
+  critérios de aceite validados nos Bolts 3/4/6/7 (7 confirmados, 1
+  pendente: `/enquadrar` disparado de verdade), e changelog de todos os
+  bolts.
 - **Checkpoint:** Lucas confirma que o agente está pronto pra entrar no
-  toolkit pré-hackathon.
-- **Status:** todo
+  toolkit pré-hackathon — inclusive decidir se a limitação do `/enquadrar`
+  (comando nunca disparado de verdade) precisa virar um bolt novo antes
+  disso, ou se pode ficar registrada como limitação conhecida por agora.
+- **Status:** checkpoint — aguardando confirmação do Lucas
