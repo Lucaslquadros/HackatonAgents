@@ -12,12 +12,15 @@ que o próprio Agente Enquadrador precisa aplicar aos editais dele.
 | 3 | `03-climatonbrasil-tcu-2026.md` | Governo (TCU, Brasil) | Critérios de avaliação existem mas sem peso declarado — testa detecção de ambiguidade |
 | 4 | `04-aws-breaking-barriers-2026.md` | Corporativo/internacional (AWS) | Página institucional, não um edital técnico — testa se o agente reconhece "informação insuficiente" em vez de inventar critérios |
 | 5 | `05-ifce-hackathon-2026.md` | Instituto federal + banco público (Brasil) | Fonte é matéria de jornal, não o edital oficial — desafio claro mas critérios ausentes; testa se o agente distingue "critério não existe" de "fonte não é a primária" |
+| 6 | `06-hackathon-climatico-agua-sp-2026.md` | Governo municipal (Prefeitura de SP / SECLIMA) | Único caso da coleção com **peso de critério realmente declarado** (tabela de pontos 0-10); também testa se o agente identifica critério de pré-seleção citado no texto ("justiça climática") que não aparece na tabela de pontos |
+| — | `editais_hackathons/` (subpasta) | Ideathon Energisa 2026 + Low Hack 2026 (reconstrução) | Energisa é edital inédito (→ `saidas/06`); Low Hack é duplicata do item 2, pulada conscientemente — ver `agente-enquadrador/02-construction/BOLTS.md`, Bolt 6 |
 
-Os itens 3, 4 e 5 foram capturados como texto (a fonte é HTML, não PDF) — o
-cabeçalho de cada arquivo tem a URL original; a fonte original prevalece em
-caso de divergência. O item 5 é, adicionalmente, uma fonte secundária
-(jornalismo sobre o edital, não o edital em si) — proposital, para testar
-esse caso realista.
+Os itens 3, 4, 5 e 6 foram capturados como texto (a fonte é HTML, não PDF)
+— o cabeçalho de cada arquivo tem a URL original; a fonte original
+prevalece em caso de divergência. O item 5 é, adicionalmente, uma fonte
+secundária (jornalismo sobre o edital, não o edital em si) — proposital,
+para testar esse caso realista. O item 6 foi capturado por transcrição
+literal do HTML da página oficial (não resumo de IA, não OCR).
 
 ## Como isso se conecta ao Inception do Agente Enquadrador
 

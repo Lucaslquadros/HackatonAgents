@@ -95,6 +95,33 @@ suficiente pra justificar ainda).
   qualidade do output 06 na tela do Bolt 4.1.
 - **Status:** checkpoint — aguardando confirmação do Lucas
 
+## Bolt 7 — Testar edital trazido pelo Lucas (Hackathon Climático: Água — SECLIMA/SP)
+
+- **Objetivo:** Lucas trouxe um link do Diário Oficial da Cidade de São
+  Paulo (Edital 02/2026, Hackathon Climático: Água, SECLIMA) e pediu para
+  adicionar esse edital à coleção de testes.
+- **Como foi capturado:** primeira tentativa via WebFetch (resumo por IA)
+  ficou incompleta — não pegou a estrutura de duas etapas de avaliação
+  nem o critério de "justiça climática" citado no texto oficial. Segunda
+  tentativa: baixei o HTML da página diretamente (`curl`) e extraí o texto
+  literal decodificando as entidades HTML — o `md_epubli_visualizar.php`
+  da Prefeitura entrega o texto completo do edital dentro do próprio HTML,
+  não só como imagem. Resultado ficou em
+  `editais-referencia/06-hackathon-climatico-agua-sp-2026.md`, transcrição
+  literal, não resumo.
+- **Rodado:** → `saidas/07-hackathon-climatico-agua-sp-2026.md`. Achados:
+  (1) primeiro edital da coleção com **peso de critério realmente
+  declarado** (tabela de pontos 0-10, não "critério nomeado sem peso" como
+  nos 6 casos anteriores); (2) duas etapas de avaliação distintas
+  (prévia/SECLIMA e presencial/banca) e um critério de pré-seleção
+  ("abordagem de justiça climática") que não aparece na tabela de pontos —
+  ambiguidade real não resolvida pelo texto; (3) o edital substitui uma
+  versão anterior (01/2026), risco de squad usar edital revogado.
+- **Checkpoint:** Lucas confere o output 07 no painel de avaliação e
+  confirma se a leitura do critério de "justiça climática" como ambiguidade
+  (em vez de simplesmente ignorá-lo por não estar na tabela) faz sentido.
+- **Status:** checkpoint — aguardando confirmação do Lucas
+
 ## Bolt 5 — Preencher Operations
 
 - **Objetivo:** Documentar em `03-operations/OPERATIONS.md` como rodar

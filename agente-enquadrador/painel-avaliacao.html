@@ -420,7 +420,7 @@
 
   <section class="stats" aria-label="Resumo da cobertura de testes">
     <div class="stat">
-      <span class="val num">6 / 6</span>
+      <span class="val num">7 / 7</span>
       <span class="lbl">Cobertura</span>
       <span class="cap">todo edital único disponível em <code class="num">editais-referencia/</code> foi testado</span>
     </div>
@@ -435,9 +435,9 @@
       <span class="cap">o agente recusou inventar critério em #04 e #05 — comportamento esperado</span>
     </div>
     <div class="stat">
-      <span class="val num">13h – 8sem</span>
+      <span class="val num">13h – 5 meses</span>
       <span class="lbl">Faixa de duração real</span>
-      <span class="cap">só 2 dos 6 casos ficam perto do padrão de 48h assumido por default</span>
+      <span class="cap">só 2 dos 7 casos ficam perto do padrão de 48h assumido por default</span>
     </div>
   </section>
 
@@ -698,7 +698,7 @@
       </div>
     </details>
 
-    <details class="card ok" open>
+    <details class="card ok">
       <summary class="card-head">
         <div class="card-top">
           <span class="idx num">06</span>
@@ -710,7 +710,6 @@
           <span class="chip">fonte: PDF reconstruído do oficial</span>
           <span class="chip num">13h (1 dia)</span>
           <span class="chip">5 critérios, sem peso</span>
-          <span class="chip" style="background:var(--accent-soft); color:var(--accent-ink);">novo nesta rodada</span>
         </div>
         <p class="finding"><b>Achado principal —</b> primeiro edital da coleção com duração real <b>abaixo</b> de 48h (13h corridas) — o oposto do problema visto no #01 (~8 semanas). O agente recalculou a suposição de default corretamente em vez de manter 48h.</p>
       </summary>
@@ -765,6 +764,75 @@
       </div>
     </details>
 
+    <details class="card ok" open>
+      <summary class="card-head">
+        <div class="card-top">
+          <span class="idx num">07</span>
+          <h2>Edital 02/2026 — Hackathon Climático: Água (SECLIMA / Prefeitura de São Paulo)</h2>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="chips">
+          <span class="chip status-ok">informação completa</span>
+          <span class="chip">fonte: Diário Oficial (texto literal)</span>
+          <span class="chip num">~4,5 meses (mai–out) + evento final de 1 dia</span>
+          <span class="chip">7 critérios, <u>peso declarado</u></span>
+          <span class="chip" style="background:var(--accent-soft); color:var(--accent-ink);">trazido pelo Lucas</span>
+        </div>
+        <p class="finding"><b>Achado principal —</b> primeiro edital da coleção com peso de critério <b>realmente declarado</b> (tabela de pontos 0-10). Mas o texto cita um critério de pré-seleção — "abordagem de justiça climática" — que não aparece na tabela de pontos: ambiguidade real entre o que decide a pré-seleção e o que a tabela pontua.</p>
+      </summary>
+      <div class="card-body">
+        <div>
+          <p class="field-label">Desafio central</p>
+          <p class="prose">Soluções com caráter de política pública para gestão de recursos hídricos e segurança hídrica na Cidade de São Paulo, alinhadas ao Plano de Ação Climática Municipal (PlanClima SP).</p>
+        </div>
+        <div>
+          <p class="field-label">Critérios de avaliação (pesos declarados — raro na coleção)</p>
+          <div class="table-wrap">
+            <table class="criteria">
+              <thead><tr><th>Critério</th><th>Peso</th><th>Pergunta que a solução precisa responder</th></tr></thead>
+              <tbody>
+                <tr><td>Inovação da proposta</td><td class="peso num">2/10 (20%)</td><td>É inédita em SP, piloto, ou mais eficiente/criativa que soluções existentes?</td></tr>
+                <tr><td>Relevância climática</td><td class="peso num">2/10 (20%)</td><td>Reduz impacto climático com foco em água?</td></tr>
+                <tr><td>Viabilidade técnica de implantação</td><td class="peso num">2/10 (20%)</td><td>É factível na realidade administrativa/operacional do Município?</td></tr>
+                <tr><td>Clareza e coerência</td><td class="peso num">1/10 (10%)</td><td>Objetivos claros e raciocínio consistente no documento de 5 páginas?</td></tr>
+                <tr><td>Potencial de impacto local</td><td class="peso num">1/10 (10%)</td><td>Benefícios claros e mensuráveis?</td></tr>
+                <tr><td>Adequação ao tema</td><td class="peso num">1/10 (10%)</td><td>Alinha com recursos hídricos (nascentes, drenagem, SbN)?</td></tr>
+                <tr><td>Potencial de replicabilidade</td><td class="peso num">1/10 (10%)</td><td>Se adapta a outros contextos/escalas?</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="twocol">
+          <div>
+            <p class="field-label">Restrições-chave</p>
+            <ul class="plain">
+              <li>Grupos de 2-4 estudantes + 1 docente orientador (podem ser de instituições diferentes)</li>
+              <li>Documento de até 5 páginas, Times New Roman 12, sem identificar a instituição de ensino</li>
+              <li>Cessão gratuita e ampla de PI ao Município de São Paulo</li>
+            </ul>
+          </div>
+          <div>
+            <p class="field-label">Riscos sinalizados</p>
+            <ul class="plain risks">
+              <li>Critério de pré-seleção ("justiça climática") não está na tabela de pontos — ambiguidade não resolvida pelo texto</li>
+              <li>Edital substitui uma versão anterior (01/2026) — risco de usar regras revogadas</li>
+              <li>Sem regra de desempate declarada</li>
+              <li>Identificação institucional no documento gera desclassificação — fácil de violar sem querer</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <p class="field-label">Expectativas implícitas</p>
+          <ul class="inferences">
+            <li>"Caráter de política pública" exigido sugere que a banca espera literacia de política pública, não só solução técnica</li>
+            <li>Premiação sem valor monetário (mentoria + podcast) sugere público-alvo real é portfólio acadêmico, não retorno financeiro</li>
+            <li>Regra de documento sem identificação institucional sugere preocupação genuína da SECLIMA com viés de avaliação por prestígio de universidade</li>
+          </ul>
+        </div>
+        <p class="card-foot">Análise completa: <code>saidas/07-hackathon-climatico-agua-sp-2026.md</code> · fonte literal: <code>editais-referencia/06-hackathon-climatico-agua-sp-2026.md</code></p>
+      </div>
+    </details>
+
     <div class="ghost-row">
       <span class="idx num">—</span>
       <span class="txt"><b>Low Hack 2026 (versão reconstruída)</b> — mesmo edital do teste #02 (Siemens/Mendix), mesmo texto em formato diferente. Não recontado como caso novo.</span>
@@ -784,8 +852,15 @@
       e virou o teste #06 acima.
     </p>
     <p>
-      Painel gerado como parte do Bolt 4.1 / Bolt 6 do ciclo AI-DLC do Agente
-      Enquadrador (<code>agente-enquadrador/02-construction/BOLTS.md</code>).
+      <strong style="color:var(--ink);">Sobre o caso #07:</strong> edital trazido
+      diretamente pelo Lucas via link do Diário Oficial da Cidade de São Paulo.
+      A primeira captura (resumo por IA) perdeu detalhes finos do texto — a
+      versão final em <code>editais-referencia/06-*.md</code> é transcrição
+      literal, extraída direto do HTML da página oficial.
+    </p>
+    <p>
+      Painel gerado como parte do Bolt 4.1 / Bolt 6 / Bolt 7 do ciclo AI-DLC do
+      Agente Enquadrador (<code>agente-enquadrador/02-construction/BOLTS.md</code>).
       Conteúdo de cada card é reprodução fiel do front-matter e prosa devolvidos
       pelo agente — nada foi reescrito nesta tela, só reorganizado para leitura
       rápida.
