@@ -30,7 +30,7 @@ suficiente pra justificar ainda).
 - **Entregável:** o arquivo do comando.
 - **Checkpoint:** Lucas confirma que o comando existe e o texto faz sentido
   (ainda sem rodar).
-- **Status:** checkpoint — aguardando revisão do Lucas
+- **Status:** feito — confirmado por Lucas em 25/08/2026
 
 ## Bolt 3 — Testar contra editais bem estruturados
 
@@ -44,7 +44,7 @@ suficiente pra justificar ainda).
   peso" é o caso comum, não a exceção; e a duração real varia bastante (8
   semanas / 37h corridas / 2 dias) — a suposição de 48h do prompt precisa
   seguir tratada como default, não como verdade.
-- **Status:** checkpoint — aguardando confirmação do Lucas
+- **Status:** feito — confirmado por Lucas em 25/08/2026
   (nota: ainda rodado manualmente seguindo o prompt, não via `/enquadrar` de
   verdade — ver limitação de ambiente registrada no Bolt 2)
 
@@ -58,7 +58,7 @@ suficiente pra justificar ainda).
   com `criterios: []`, `informacao_insuficiente: true` e uma recomendação
   (não inferência sobre conteúdo) para o squad buscar o edital real da
   edição específica.
-- **Status:** checkpoint — aguardando confirmação do Lucas
+- **Status:** feito — confirmado por Lucas em 25/08/2026
 
 ## Bolt 4.1 — Tela de visualização dos testes
 
@@ -93,7 +93,7 @@ suficiente pra justificar ainda).
   disponível em `editais-referencia/` — incluindo a subpasta — tem uma saída
   correspondente ou está explicitamente marcado como duplicata) e avalia a
   qualidade do output 06 na tela do Bolt 4.1.
-- **Status:** checkpoint — aguardando confirmação do Lucas
+- **Status:** feito — confirmado por Lucas em 25/08/2026
 
 ## Bolt 7 — Testar edital trazido pelo Lucas (Hackathon Climático: Água — SECLIMA/SP)
 
@@ -120,7 +120,7 @@ suficiente pra justificar ainda).
 - **Checkpoint:** Lucas confere o output 07 no painel de avaliação e
   confirma se a leitura do critério de "justiça climática" como ambiguidade
   (em vez de simplesmente ignorá-lo por não estar na tabela) faz sentido.
-- **Status:** checkpoint — aguardando confirmação do Lucas
+- **Status:** feito — confirmado por Lucas em 25/08/2026
 
 ## Bolt 5 — Preencher Operations
 
