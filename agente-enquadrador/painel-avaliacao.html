@@ -1,0 +1,793 @@
+<title>Painel de Avaliação — Agente Enquadrador</title>
+<style>
+  :root {
+    --bg: hsl(220 14% 96%);
+    --surface: hsl(220 20% 99%);
+    --surface-2: hsl(220 16% 92%);
+    --border: hsl(220 14% 83%);
+    --ink: hsl(222 30% 14%);
+    --ink-muted: hsl(220 12% 40%);
+    --accent: hsl(32 68% 40%);
+    --accent-ink: hsl(32 80% 26%);
+    --accent-soft: hsl(32 68% 91%);
+    --ok: hsl(152 45% 30%);
+    --ok-soft: hsl(152 40% 91%);
+    --warn: hsl(36 82% 36%);
+    --warn-soft: hsl(38 85% 91%);
+    --crit: hsl(6 62% 44%);
+    --crit-soft: hsl(6 60% 93%);
+    --shadow: 220 30% 20%;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: hsl(222 26% 9%);
+      --surface: hsl(222 22% 12%);
+      --surface-2: hsl(222 20% 16%);
+      --border: hsl(222 16% 25%);
+      --ink: hsl(220 22% 92%);
+      --ink-muted: hsl(220 12% 66%);
+      --accent: hsl(34 72% 58%);
+      --accent-ink: hsl(34 85% 76%);
+      --accent-soft: hsl(34 45% 20%);
+      --ok: hsl(150 40% 56%);
+      --ok-soft: hsl(150 35% 16%);
+      --warn: hsl(40 78% 58%);
+      --warn-soft: hsl(40 55% 17%);
+      --crit: hsl(6 68% 63%);
+      --crit-soft: hsl(6 45% 18%);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: hsl(222 26% 9%);
+    --surface: hsl(222 22% 12%);
+    --surface-2: hsl(222 20% 16%);
+    --border: hsl(222 16% 25%);
+    --ink: hsl(220 22% 92%);
+    --ink-muted: hsl(220 12% 66%);
+    --accent: hsl(34 72% 58%);
+    --accent-ink: hsl(34 85% 76%);
+    --accent-soft: hsl(34 45% 20%);
+    --ok: hsl(150 40% 56%);
+    --ok-soft: hsl(150 35% 16%);
+    --warn: hsl(40 78% 58%);
+    --warn-soft: hsl(40 55% 17%);
+    --crit: hsl(6 68% 63%);
+    --crit-soft: hsl(6 45% 18%);
+  }
+  :root[data-theme="light"] {
+    --bg: hsl(220 14% 96%);
+    --surface: hsl(220 20% 99%);
+    --surface-2: hsl(220 16% 92%);
+    --border: hsl(220 14% 83%);
+    --ink: hsl(222 30% 14%);
+    --ink-muted: hsl(220 12% 40%);
+    --accent: hsl(32 68% 40%);
+    --accent-ink: hsl(32 80% 26%);
+    --accent-soft: hsl(32 68% 91%);
+    --ok: hsl(152 45% 30%);
+    --ok-soft: hsl(152 40% 91%);
+    --warn: hsl(36 82% 36%);
+    --warn-soft: hsl(38 85% 91%);
+    --crit: hsl(6 62% 44%);
+    --crit-soft: hsl(6 60% 93%);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    padding: clamp(24px, 5vw, 64px) 18px 96px;
+  }
+  .page {
+    max-width: 860px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .display {
+    font-family: "Iowan Old Style", "Palatino Linotype", "URW Palladio L", Georgia, serif;
+  }
+  .num {
+    font-family: ui-monospace, "Cascadia Code", "Consolas", "SFMono-Regular", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  header.masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  h1.display {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 600;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+  .lede {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--ink-muted);
+    font-size: 15.5px;
+    line-height: 1.6;
+  }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  /* stat strip */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .stat {
+    background: var(--surface);
+    padding: 16px 16px 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .stat .val {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .stat .lbl {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--ink-muted);
+    font-weight: 600;
+  }
+  .stat .cap {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    line-height: 1.4;
+  }
+  @media (max-width: 620px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* dossier list */
+  .dossier-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  details.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--status-color, var(--border));
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  details.card[open] { padding-bottom: 4px; }
+  details.card.ok    { --status-color: var(--ok); }
+  details.card.warn  { --status-color: var(--warn); }
+
+  summary.card-head {
+    list-style: none;
+    cursor: pointer;
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  summary.card-head::-webkit-details-marker { display: none; }
+  summary.card-head:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  .card-top .idx {
+    font-size: 13px;
+    color: var(--ink-muted);
+    flex: none;
+  }
+  .card-top h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    flex: 1;
+  }
+  .chev {
+    flex: none;
+    width: 18px;
+    height: 18px;
+    color: var(--ink-muted);
+    transition: transform 0.15s ease;
+  }
+  details[open] .chev { transform: rotate(90deg); }
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 100px;
+    background: var(--surface-2);
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+  .chip.status-ok   { background: var(--ok-soft); color: var(--ok); }
+  .chip.status-warn { background: var(--warn-soft); color: var(--warn); }
+  .chip.source-flag { background: var(--warn-soft); color: var(--warn); }
+
+  .finding {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--accent-soft);
+    border-radius: 6px;
+    padding: 9px 12px;
+  }
+  .finding b { color: var(--accent-ink); }
+
+  .card-body {
+    padding: 2px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    border-top: 1px solid var(--border);
+    margin-top: 2px;
+    padding-top: 16px;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin: 0 0 8px;
+  }
+  .prose { font-size: 14.5px; line-height: 1.6; margin: 0; max-width: 66ch; }
+
+  table.criteria {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  table.criteria th, table.criteria td {
+    text-align: left;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.criteria th {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    font-weight: 700;
+  }
+  table.criteria td.peso { white-space: nowrap; color: var(--ink-muted); }
+  .table-wrap { overflow-x: auto; }
+  .empty-note {
+    font-size: 13.5px;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+
+  .twocol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 560px) {
+    .twocol { grid-template-columns: 1fr; }
+  }
+  ul.plain {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  ul.plain li {
+    font-size: 13.5px;
+    line-height: 1.5;
+    padding-left: 14px;
+    position: relative;
+  }
+  ul.plain li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 7px;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--ink-muted);
+    opacity: 0.5;
+  }
+  ul.plain.risks li::before { background: var(--warn); opacity: 0.8; }
+
+  ul.inferences {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  ul.inferences li {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+  ul.inferences li::before {
+    content: "inferência — ";
+    font-style: normal;
+    font-weight: 700;
+    color: var(--accent-ink);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .card-foot {
+    font-size: 12px;
+    color: var(--ink-muted);
+    padding-top: 4px;
+    border-top: 1px dashed var(--border);
+  }
+  .card-foot code {
+    font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+
+  /* skipped / ghost row */
+  .ghost-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: transparent;
+  }
+  .ghost-row .idx { font-size: 13px; color: var(--ink-muted); }
+  .ghost-row .txt { font-size: 13.5px; color: var(--ink-muted); flex: 1; }
+  .ghost-row .txt b { color: var(--ink); font-weight: 600; }
+  .ghost-row .chip { flex: none; }
+
+  footer.notes {
+    border-top: 1px solid var(--border);
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  footer.notes p {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--ink-muted);
+    max-width: 68ch;
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">Agente Enquadrador de Editais · Hack_OS</p>
+    <h1 class="display">Painel de avaliação do lote de testes</h1>
+    <p class="lede">
+      Cada bloco abaixo é a saída de uma execução independente do agente contra
+      um edital real — front-matter estruturado seguido de análise em prosa.
+      Clique em qualquer edital para expandir a matriz de critérios, riscos e
+      expectativas implícitas. Objetivo desta tela: <strong>o Lucas avaliar a
+      qualidade do agente</strong>, não o conteúdo dos editais em si.
+    </p>
+  </header>
+
+  <section class="stats" aria-label="Resumo da cobertura de testes">
+    <div class="stat">
+      <span class="val num">6 / 6</span>
+      <span class="lbl">Cobertura</span>
+      <span class="cap">todo edital único disponível em <code class="num">editais-referencia/</code> foi testado</span>
+    </div>
+    <div class="stat">
+      <span class="val num">1</span>
+      <span class="lbl">Duplicata pulada</span>
+      <span class="cap">Low Hack v2 = mesmo edital do teste #02, não recontado</span>
+    </div>
+    <div class="stat">
+      <span class="val num">2</span>
+      <span class="lbl">Informação insuficiente</span>
+      <span class="cap">o agente recusou inventar critério em #04 e #05 — comportamento esperado</span>
+    </div>
+    <div class="stat">
+      <span class="val num">13h – 8sem</span>
+      <span class="lbl">Faixa de duração real</span>
+      <span class="cap">só 2 dos 6 casos ficam perto do padrão de 48h assumido por default</span>
+    </div>
+  </section>
+
+  <section class="dossier-list" aria-label="Editais testados">
+
+    <details class="card ok">
+      <summary class="card-head">
+        <div class="card-top">
+          <span class="idx num">01</span>
+          <h2>Edital Conjunto UFC–TJCE Nº 01/2026 — I Hackathon TJCE-UFC</h2>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="chips">
+          <span class="chip status-ok">informação completa</span>
+          <span class="chip">fonte: PDF oficial</span>
+          <span class="chip num">~8 semanas corridas</span>
+          <span class="chip">3 critérios, sem peso</span>
+        </div>
+        <p class="finding"><b>Achado principal —</b> tratar isto como sprint de 48h é o erro mais provável: o formato real são ~8 semanas (11/09–05/11) com 5 marcos síncronos. O agente sinalizou isso como risco #1 em vez de forçar o default do prompt.</p>
+      </summary>
+      <div class="card-body">
+        <div>
+          <p class="field-label">Desafio central</p>
+          <p class="prose">3 desafios distintos para a VEMA/TJCE (cada equipe escolhe 1): ocupações irregulares em áreas de preservação, atualização contínua de dados de ocupação judicializada, e organização do acervo processual.</p>
+        </div>
+        <div>
+          <p class="field-label">Critérios de avaliação</p>
+          <div class="table-wrap">
+            <table class="criteria">
+              <thead><tr><th>Critério</th><th>Peso</th><th>Pergunta que a solução precisa responder</th></tr></thead>
+              <tbody>
+                <tr><td>Funcionalidade</td><td class="peso">não declarado</td><td>Responde ao desafio de forma consistente, inovadora e tecnicamente viável?</td></tr>
+                <tr><td>Aplicabilidade</td><td class="peso">não declarado</td><td>Tem potencial de uso prático, custo-benefício, escalabilidade e aderência institucional?</td></tr>
+                <tr><td>Pitch</td><td class="peso">não declarado</td><td>Apresentação clara, organizada e entusiástica sobre implementação?</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="twocol">
+          <div>
+            <p class="field-label">Restrições-chave</p>
+            <ul class="plain">
+              <li>Equipe fixa de 4 estudantes UFC, perfis Hacker/Hipster/Hustler</li>
+              <li>Cada equipe se dedica a apenas 1 dos 3 desafios</li>
+              <li>Predominantemente remoto — só Dia 1 e Demoday presenciais</li>
+            </ul>
+          </div>
+          <div>
+            <p class="field-label">Riscos sinalizados</p>
+            <ul class="plain risks">
+              <li>Alocar esforço como sprint concentrado desperdiça mentoria e ensaio avaliado</li>
+              <li>Escolha do desafio ocorre na inscrição — risco de desalinhamento de equipe</li>
+              <li>Eliminação por formulário "inconsistente" (risco administrativo)</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <p class="field-label">Expectativas implícitas</p>
+          <ul class="inferences">
+            <li>Problema crônico da VEMA — soluções de baixo atrito institucional têm mais chance que grandes investimentos</li>
+            <li>Perfil de banca institucional/jurídico-administrativo — defesa em linguagem de impacto, não só argumento técnico</li>
+            <li>Prêmio é vaga de estágio, não dinheiro — patrocinador compra funil de talento e solução adotável, não vitrine de criatividade</li>
+          </ul>
+        </div>
+        <p class="card-foot">Análise completa: <code>saidas/01-ufc-tjce-hackathon-2026.md</code></p>
+      </div>
+    </details>
+
+    <details class="card ok">
+      <summary class="card-head">
+        <div class="card-top">
+          <span class="idx num">02</span>
+          <h2>Hackathon Low Hack 2026 Online — Siemens / Mendix</h2>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="chips">
+          <span class="chip status-ok">informação completa</span>
+          <span class="chip">fonte: PDF oficial</span>
+          <span class="chip num">37h corridas</span>
+          <span class="chip">6 critérios, sem peso</span>
+        </div>
+        <p class="finding"><b>Achado principal —</b> desclassificação automática por não usar a plataforma Mendix funciona como um "peso infinito" de fato: nenhuma nota nos 6 critérios importa se essa condição não for cumprida.</p>
+      </summary>
+      <div class="card-body">
+        <div>
+          <p class="field-label">Desafio central</p>
+          <p class="prose">Soluções que incentivem consumo consciente e produção responsável (ODS 9 / ODS 12), construídas obrigatoriamente em Mendix (low-code) com GenAI via API OpenAI fornecida.</p>
+        </div>
+        <div>
+          <p class="field-label">Critérios de avaliação</p>
+          <div class="table-wrap">
+            <table class="criteria">
+              <thead><tr><th>Critério</th><th>Peso</th><th>Pergunta que a solução precisa responder</th></tr></thead>
+              <tbody>
+                <tr><td>Potencial de impacto</td><td class="peso">não declarado</td><td>Qual o impacto para o desafio proposto?</td></tr>
+                <tr><td>Modelo de negócio</td><td class="peso">não declarado</td><td>É escalável e aplicável ao desafio?</td></tr>
+                <tr><td>Aderência ao desafio</td><td class="peso">não declarado</td><td>Resolve efetivamente o problema proposto?</td></tr>
+                <tr><td>Inovação da solução</td><td class="peso">não declarado</td><td>Traz inovação em tecnologia ou processo?</td></tr>
+                <tr><td>Apresentação (vídeo)</td><td class="peso">não declarado</td><td>Pitch claro, completo e aderente?</td></tr>
+                <tr><td>Critério técnico</td><td class="peso">não declarado</td><td>App funciona, usa GenAI de fato, boa UX/UI?</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="twocol">
+          <div>
+            <p class="field-label">Restrições-chave</p>
+            <ul class="plain">
+              <li>Obrigatório Mendix + GenAI via OpenAI — sem exceção</li>
+              <li>Publicar no Mendix Cloud (Free Tier)</li>
+              <li>Equipe de 3 a 5, notebook próprio, 100% online</li>
+            </ul>
+          </div>
+          <div>
+            <p class="field-label">Riscos sinalizados</p>
+            <ul class="plain risks">
+              <li>Regra de eliminação por stack é mais dura que qualquer nota de critério</li>
+              <li>Critério de desempate expõe um piso técnico implícito (≥3 páginas, persistência de dados)</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <p class="field-label">Expectativas implícitas</p>
+          <ul class="inferences">
+            <li>Patrocinador (Siemens, dona da Mendix) usa o hackathon como vitrine da própria plataforma</li>
+            <li>Cessão ampla de imagem sugere objetivo também de geração de conteúdo de marketing, não só achar a melhor solução técnica</li>
+          </ul>
+        </div>
+        <p class="card-foot">Análise completa: <code>saidas/02-lowhack-2026-online.md</code></p>
+      </div>
+    </details>
+
+    <details class="card ok">
+      <summary class="card-head">
+        <div class="card-top">
+          <span class="idx num">03</span>
+          <h2>ClimatonBrasil 2026 — Hackathon do TCU</h2>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="chips">
+          <span class="chip status-ok">informação completa</span>
+          <span class="chip">fonte: site institucional</span>
+          <span class="chip num">2 dias presenciais</span>
+          <span class="chip">4 critérios, sem peso</span>
+        </div>
+        <p class="finding"><b>Achado principal —</b> caso intermediário entre "critério claro com peso" e "sem critério nenhum": confirma que critério nomeado sem peso declarado é o padrão comum da amostra, não a exceção.</p>
+      </summary>
+      <div class="card-body">
+        <div>
+          <p class="field-label">Desafio central</p>
+          <p class="prose">Como os dados do Painel ClimaBrasil podem ajudar a sociedade a cobrar ações climáticas mais efetivas, e/ou melhorar políticas públicas de estados e capitais.</p>
+        </div>
+        <div>
+          <p class="field-label">Critérios de avaliação</p>
+          <div class="table-wrap">
+            <table class="criteria">
+              <thead><tr><th>Critério</th><th>Peso</th><th>Pergunta que a solução precisa responder</th></tr></thead>
+              <tbody>
+                <tr><td>Aderência ao desafio</td><td class="peso">não declarado</td><td>Responde a uma das perguntas-guia do Painel ClimaBrasil?</td></tr>
+                <tr><td>Uso adequado dos dados</td><td class="peso">não declarado</td><td>Usa o Painel como base obrigatória, não só complementar?</td></tr>
+                <tr><td>Viabilidade técnica</td><td class="peso">não declarado</td><td>É construível no formato apresentado?</td></tr>
+                <tr><td>Potencial de impacto real</td><td class="peso">não declarado</td><td>Tem uso prático fora do hackathon?</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="twocol">
+          <div>
+            <p class="field-label">Restrições-chave</p>
+            <ul class="plain">
+              <li>Painel ClimaBrasil obrigatório como dado-base</li>
+              <li>Equipes formadas no início do evento, não pré-formadas</li>
+              <li>Presencial nos 2 dias, notebook próprio</li>
+            </ul>
+          </div>
+          <div>
+            <p class="field-label">Riscos sinalizados</p>
+            <ul class="plain risks">
+              <li>Critérios sem peso declarado publicamente</li>
+              <li>Formação de equipe no próprio evento — risco de "squad sem acordo"</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <p class="field-label">Expectativas implícitas</p>
+          <ul class="inferences">
+            <li>TCU, como órgão de controle, provavelmente valoriza transparência/accountability mais que solução puramente técnica</li>
+            <li>Prêmio inclui Summit internacional — sugere case de exportação institucional, não só resolver o problema internamente</li>
+          </ul>
+        </div>
+        <p class="card-foot">Análise completa: <code>saidas/03-climatonbrasil-tcu-2026.md</code></p>
+      </div>
+    </details>
+
+    <details class="card warn">
+      <summary class="card-head">
+        <div class="card-top">
+          <span class="idx num">04</span>
+          <h2>AWS Breaking Barriers Hackathon — série 2026</h2>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="chips">
+          <span class="chip status-warn">informação insuficiente</span>
+          <span class="chip source-flag">página de marketing, não edital técnico</span>
+          <span class="chip num">duração não determinável</span>
+        </div>
+        <p class="finding"><b>Achado principal —</b> a página descreve uma série de hackathons com temas variados por edição, não um edital de competição específica. O agente devolveu <code class="num">criterios: []</code> em vez de inventar uma matriz — resultado correto, não uma falha.</p>
+      </summary>
+      <div class="card-body">
+        <div>
+          <p class="field-label">O que faltou para montar a matriz</p>
+          <p class="prose">Um desafio específico com pergunta central; restrições de tecnologia, dados ou formato; critérios de avaliação com ou sem peso; entregáveis concretos (formato de submissão, prazo).</p>
+        </div>
+        <div>
+          <p class="field-label">Riscos sinalizados</p>
+          <ul class="plain risks">
+            <li>Não há seção de restrições, critérios com peso, nem entregáveis específicos publicados nesta fonte</li>
+            <li>Recomendação ao squad: buscar o material específico da edição antes de montar qualquer matriz — não é inferência sobre conteúdo, é orientação de processo</li>
+          </ul>
+        </div>
+        <p class="card-foot">Análise completa: <code>saidas/04-aws-breaking-barriers-2026.md</code></p>
+      </div>
+    </details>
+
+    <details class="card warn">
+      <summary class="card-head">
+        <div class="card-top">
+          <span class="idx num">05</span>
+          <h2>Hackathon 2026 — IFCE Campus Iguatu</h2>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="chips">
+          <span class="chip status-warn">informação insuficiente</span>
+          <span class="chip source-flag">fonte secundária: matéria de jornal</span>
+          <span class="chip num">14h presenciais (2 dias)</span>
+        </div>
+        <p class="finding"><b>Achado principal —</b> diferente do #04, aqui a ausência de critérios é provavelmente limitação da fonte (jornalismo sobre o edital) e não do edital em si — o agente distinguiu os dois casos em vez de tratar ambos como "sem informação" do mesmo jeito.</p>
+      </summary>
+      <div class="card-body">
+        <div>
+          <p class="field-label">Desafio central</p>
+          <p class="prose">Desenvolver soluções tecnológicas para desafios reais do semiárido e Centro-Sul cearense — um tema/território, não uma pergunta central única como nos editais #01 e #02.</p>
+        </div>
+        <div>
+          <p class="field-label">Riscos sinalizados</p>
+          <ul class="plain risks">
+            <li>PDF oficial do edital não foi localizado nesta busca — qualquer decisão baseada só nesta fonte é arriscada</li>
+            <li>Critérios podem existir no documento oficial e simplesmente não terem sido citados pela matéria</li>
+          </ul>
+        </div>
+        <div>
+          <p class="field-label">Expectativas implícitas</p>
+          <ul class="inferences">
+            <li>Parceria com HUBINE/Banco do Nordeste e trilha de pré-incubação sugerem forte interesse em fomento regional, não pura inferência — é pista concreta no texto</li>
+          </ul>
+        </div>
+        <p class="card-foot">Análise completa: <code>saidas/05-ifce-hackathon-2026.md</code></p>
+      </div>
+    </details>
+
+    <details class="card ok" open>
+      <summary class="card-head">
+        <div class="card-top">
+          <span class="idx num">06</span>
+          <h2>Ideathon Energisa Online — Regulamento 2026</h2>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l6 6-6 6"/></svg>
+        </div>
+        <div class="chips">
+          <span class="chip status-ok">informação completa</span>
+          <span class="chip">fonte: PDF reconstruído do oficial</span>
+          <span class="chip num">13h (1 dia)</span>
+          <span class="chip">5 critérios, sem peso</span>
+          <span class="chip" style="background:var(--accent-soft); color:var(--accent-ink);">novo nesta rodada</span>
+        </div>
+        <p class="finding"><b>Achado principal —</b> primeiro edital da coleção com duração real <b>abaixo</b> de 48h (13h corridas) — o oposto do problema visto no #01 (~8 semanas). O agente recalculou a suposição de default corretamente em vez de manter 48h.</p>
+      </summary>
+      <div class="card-body">
+        <div>
+          <p class="field-label">Desafio central</p>
+          <p class="prose">Como desenvolver soluções eficazes (tecnologia, engenharia, educação/conscientização ou inovação) para minimizar riscos e garantir segurança da população em proximidade com a rede elétrica da Energisa.</p>
+        </div>
+        <div>
+          <p class="field-label">Critérios de avaliação</p>
+          <div class="table-wrap">
+            <table class="criteria">
+              <thead><tr><th>Critério</th><th>Peso</th><th>Pergunta que a solução precisa responder</th></tr></thead>
+              <tbody>
+                <tr><td>Impacto na segurança</td><td class="peso">não declarado</td><td>Reduz risco de forma mensurável ou plausível — não só "conscientiza"?</td></tr>
+                <tr><td>Escalabilidade</td><td class="peso">não declarado</td><td>Funciona além de um piloto local, nas 9 áreas de concessão da Energisa?</td></tr>
+                <tr><td>Viabilidade técnica</td><td class="peso">não declarado</td><td>É implementável com a tecnologia citada, dentro de 13h?</td></tr>
+                <tr><td>Inovação</td><td class="peso">não declarado</td><td>O que tem que uma campanha tradicional ou EPI já existente não têm?</td></tr>
+                <tr><td>Apresentação da solução</td><td class="peso">não declarado</td><td>O pitch de 3 min comunica sem contexto prévio?</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="twocol">
+          <div>
+            <p class="field-label">Restrições-chave</p>
+            <ul class="plain">
+              <li>Equipe de 3 a 5, notebook próprio obrigatório</li>
+              <li>Propriedade intelectual das propostas pertence ao Grupo Energisa, mesmo sem premiação</li>
+              <li>Login no Discord obrigatório até 9h do dia do evento</li>
+            </ul>
+          </div>
+          <div>
+            <p class="field-label">Riscos sinalizados</p>
+            <ul class="plain risks">
+              <li>Ambíguo se a nota de "entregáveis" (documentação) compõe o ranking final ou só o desempate</li>
+              <li>Cessão de PI é incondicional — squads que querem reaproveitar a solução depois devem saber disso antes de investir horas</li>
+              <li>Decisões da comissão soberanas e irrecorríveis, sem canal de contestação</li>
+            </ul>
+          </div>
+        </div>
+        <div>
+          <p class="field-label">Expectativas implícitas</p>
+          <ul class="inferences">
+            <li>Banca provavelmente tem perfil técnico-operacional (setor elétrico regulado, 9 estados) além de inovação</li>
+            <li>"Vida em primeiro lugar" como valor institucional — soluções performáticas sem rigor tendem a ser mal avaliadas em impacto na segurança</li>
+            <li>Critério "escalabilidade" nomeado + presença multi-estadual sugerem expectativa de solução replicável, não piloto de bairro</li>
+            <li>Cessão de PI incondicional sugere interesse institucional real em implementar, reforçando peso prático de "viabilidade técnica"</li>
+          </ul>
+        </div>
+        <p class="card-foot">Análise completa: <code>saidas/06-ideathon-energisa-2026.md</code></p>
+      </div>
+    </details>
+
+    <div class="ghost-row">
+      <span class="idx num">—</span>
+      <span class="txt"><b>Low Hack 2026 (versão reconstruída)</b> — mesmo edital do teste #02 (Siemens/Mendix), mesmo texto em formato diferente. Não recontado como caso novo.</span>
+      <span class="chip">duplicata · pulada</span>
+    </div>
+
+  </section>
+
+  <footer class="notes">
+    <p>
+      <strong style="color:var(--ink);">Sobre a cobertura:</strong> a pasta
+      <code>editais-referencia/editais_hackathons/</code> (movida de <code>aulas/</code>
+      entre sessões) continha 2 arquivos. Um deles — Low Hack — já estava coberto
+      pelo teste #02 com o PDF oficial; rodar de novo seria trabalho redundante,
+      não um caso novo, então foi pulado conscientemente e registrado no Bolt 6
+      do <code>BOLTS.md</code>. O outro — Ideathon Energisa — era de fato inédito
+      e virou o teste #06 acima.
+    </p>
+    <p>
+      Painel gerado como parte do Bolt 4.1 / Bolt 6 do ciclo AI-DLC do Agente
+      Enquadrador (<code>agente-enquadrador/02-construction/BOLTS.md</code>).
+      Conteúdo de cada card é reprodução fiel do front-matter e prosa devolvidos
+      pelo agente — nada foi reescrito nesta tela, só reorganizado para leitura
+      rápida.
+    </p>
+  </footer>
+
+</div>

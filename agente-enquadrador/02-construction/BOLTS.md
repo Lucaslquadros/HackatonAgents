@@ -63,11 +63,37 @@ suficiente pra justificar ainda).
 ## Bolt 4.1 — Tela de visualização dos testes
 
 - **Objetivo:** Renderizar os `.md` de `saidas/` de forma legível (front-matter
-  como cards, prosa abaixo), para conferir os 4 testes numa tela só em vez de
+  como cards, prosa abaixo), para conferir os testes numa tela só em vez de
   abrir arquivo por arquivo.
-- **Entregável:** a definir na implementação (ex.: página local ou artifact).
-- **Checkpoint:** Lucas confere os 4 outputs numa tela só.
-- **Status:** todo
+- **Entregável:** Artifact HTML publicado, cobrindo os 6 outputs de `saidas/`.
+- **Checkpoint:** Lucas confere os outputs numa tela só e dá feedback sobre a
+  qualidade do agente.
+- **Status:** feito
+
+## Bolt 6 — Testar contra o lote novo de editais (`editais-referencia/editais_hackathons/`)
+
+- **Objetivo:** Garantir que todo edital de teste disponível no repositório
+  passa pelo agente. Essa pasta (movida pelo Lucas de `aulas/` para dentro de
+  `editais-referencia/` entre sessões) trazia 2 arquivos candidatos:
+  `Ideathon_Energisa_2026_Regulamento.md` e `Low_Hack_2026_Regulamento.md`.
+- **Achado antes de rodar o agente:** `Low_Hack_2026_Regulamento.md` é o
+  **mesmo edital** já coberto por `saidas/02-lowhack-2026-online.md` (mesmo
+  eventos Siemens/Mendix, mesmo texto — só reconstruído em formato diferente
+  a partir do PDF oficial). Rodar de novo seria trabalho redundante, não um
+  caso de teste novo — pulado conscientemente, não por omissão.
+- **Rodado:** `Ideathon_Energisa_2026_Regulamento.md` (edital de fato inédito
+  na coleção) → `saidas/06-ideathon-energisa-2026.md`. Achado principal: é o
+  primeiro edital da coleção com duração real *abaixo* de 48h (13h corridas,
+  9h-22h de um único dia) — o oposto do problema visto no edital 01 (~8
+  semanas). Achado secundário: ambiguidade entre a nota de "entregáveis"
+  (documentação, item 8.2) e a nota dos 5 critérios (item 8.2.4) — o
+  regulamento não deixa claro se compõem o mesmo ranking ou se a primeira só
+  serve de desempate.
+- **Checkpoint:** Lucas confirma que a cobertura está completa (todo edital
+  disponível em `editais-referencia/` — incluindo a subpasta — tem uma saída
+  correspondente ou está explicitamente marcado como duplicata) e avalia a
+  qualidade do output 06 na tela do Bolt 4.1.
+- **Status:** checkpoint — aguardando confirmação do Lucas
 
 ## Bolt 5 — Preencher Operations
 
