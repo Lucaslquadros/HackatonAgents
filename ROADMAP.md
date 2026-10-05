@@ -21,6 +21,13 @@ Aula 2 (**Enquadrar → Divergir → Decidir → Construir → Narrar → Defend
 diferente, e um agente por fase é mais fácil de testar do que um agente
 genérico fazendo tudo.
 
+**Princípio de produto (2026-10-04):** a plataforma funciona como um
+**guia do método** para o squad: cada etapa do app corresponde a uma etapa
+das aulas, e o app não deixa pular etapa sem que o squad decida isso
+explicitamente. Segunda base pedagógica: disciplina *Inovação e Design
+Thinking* (IBMEC IBM1740). O mapa etapa a etapa, com as teorias de cada
+uma e o que ainda não está coberto, fica em `FLUXO-PEDAGOGICO.md`.
+
 ## Padrão técnico de implementação
 
 Decisão (confirmada nesta conversa): usar só as ferramentas nativas do
@@ -54,6 +61,13 @@ arquivo viaja com o template para todo agente novo.
 | 1 | Agente Enquadrador de Editais | Enquadrar (0-4h) | AC1 — matriz de análise de edital | Em Inception → `agente-enquadrador/` |
 | 2 | Agente de Alinhamento Contínuo | Divergir → Decidir → Construir → Narrar | AC2 (problem framing/discovery) e AC4 (AI Hackathon Stack e plano de validação) | Backlog — Inception próprio ainda não iniciado |
 | 3 | Agente Orquestrador + experiência (porta/pacto/sala) | Toda a jornada (camada visual + gestão do squad) | AC4 (AI Hackathon Stack) / AP2 (Demo Day) | Ideia capturada → `VISAO-EXPERIENCIA.md` — Inception ainda não iniciado |
+| 4 | Agente de Visão Sistêmica | Entre Enquadrar e Divergir (pode rodar de novo ao longo da jornada) | AC2 (problem framing/discovery) e AC3 (hipóteses) | Em Inception → `agente-sistemico/` |
+| 5 | Triagem Cynefin | Enquadrar → Divergir (decide se o desafio pede mapa sistêmico) | AC2 | Ideia capturada (2026-10-04) — Inception ainda não iniciado |
+| 6 | Agente de Panorama e Priorização | Divergir (início): do tema macro aos problemas candidatos ranqueados | AC2 (problem framing/discovery) | Ideia capturada (2026-10-04) — Inception ainda não iniciado |
+| 7 | Aba Matriz CSD (registro de evidências) | Toda a jornada | AC2, AC4 (plano de validação) | Decidido (2026-10-04) — Inception ainda não iniciado |
+| 8 | Ritual do fundo do U (presencing conduzido) | Entre Divergir e Decidir | AC2 | Decidido (2026-10-04) — parte do Orquestrador, ver `FLUXO-PEDAGOGICO.md` 5.1 |
+| 9 | Agente de Framing (CSD → POV → HMW) | Decidir | AC2 | Decidido (2026-10-04) — Inception ainda não iniciado |
+| 10 | Escuta de campo (etapa guiada do Orquestrador) | Divergir | AC2 | Decidido (2026-10-04) — roteiro gerado a partir da Matriz CSD |
 
 ### Agente 1 — Enquadrador de Editais
 
@@ -100,6 +114,59 @@ parte da ideia, em `VISAO-EXPERIENCIA.md`.
 - Quando abrir o Inception: depois que os Agentes 1 e 2 estiverem validados
   — o orquestrador precisa ter o que orquestrar antes de fazer sentido
   desenhar a experiência em cima dele.
+
+### Agente 4 — Visão Sistêmica
+
+Recebe um tema + descrição de problema (livre, ou da saída do Agente 1),
+entrevista o squad, monta o rascunho de um Diagrama de Loop Causal (CLD),
+critica as versões seguintes e aponta *onde* estão as alavancas (nível de
+Meadows), sem dizer *o que* construir. Roda várias vezes e sobre vários
+recortes do mesmo edital, para o squad comparar sistemas. Base teórica: a
+disciplina de Inovação e Design Thinking (pensamento sistêmico, CLD,
+arquétipos, Meadows, sensemaking). Ver `agente-sistemico/01-inception/INCEPTION.md`.
+
+### Componente 5 — Triagem Cynefin (conceito, ainda sem Inception)
+
+Classifica o desafio (ou cada recorte dele) no Cynefin: claro, complicado,
+complexo, caótico. Se for complexo, encaminha para o Agente de Visão
+Sistêmica; se for claro ou complicado, sinaliza que análise/boa prática
+basta. O Agente 4 não depende deste componente (aceita a classificação como
+entrada opcional), o que mantém as peças testáveis em separado.
+
+### Agente 6 — Panorama e Priorização (conceito, ainda sem Inception)
+
+Ideia do Lucas (2026-10-04), com o exemplo "saúde pública no Brasil": antes
+de mapear um sistema, o squad precisa entender o cenário macro (doenças que
+mais afetam, gastos, atores) e só então escolher um problema nichado
+(ex.: controle de receitas e remédios do SUS; ausência em consultas). Este
+agente cobre esse funil:
+
+1. **Panorama:** pesquisa vira cartões de fato no quadro, **sempre com
+   fonte e data**, ou marcados como estimativa com a conta aberta.
+2. **Clusters relacionais e atores:** o squad agrupa por relação (não por
+   área) e mapeia quem sofre, quem decide, quem paga; o agente aponta nós
+   (elementos em mais de um cluster) e lacunas.
+3. **Problemas candidatos:** cada um como pergunta-problema, com magnitude
+   e fonte.
+4. **Ranqueamento:** matriz com magnitude, centralidade sistêmica,
+   alavancagem alcançável, tratabilidade (Cynefin, dados, Δt) e aderência
+   ao edital; **pesos definidos pelo squad**, o agente não escolhe.
+
+Os 2 ou 3 finalistas seguem para o Agente de Visão Sistêmica (CLD micro).
+É por este agente que um tema solto entra na esteira (ex.: "mobilidade
+urbana em São Paulo"): o teste de 2026-10-05 mostrou que o agente sistêmico,
+recebendo só o tema, corretamente pede um recorte — fazer esse recorte é o
+trabalho do Panorama.
+
+**Princípio de conversa (2026-10-05, vale para os agentes que conversam
+com o squad):** conversa guiada em rodadas — perguntas com opções e campo
+livre, respostas que viram campos do estado em disco — em vez de chat
+livre. Chat ancorado num ponto específico só depois da migração do motor
+para a API. Detalhe na decisão 12 do Inception do Agente de Visão
+Sistêmica.
+O mapa macro **não é um CLD** (um CLD de "saúde pública" teria dezenas de
+variáveis, e a aula diz que "vinte é descrição, não modelo"). Usa o mesmo
+quadro do Agente 4, em modo clusters.
 
 ## Por que dois agentes e não um só
 

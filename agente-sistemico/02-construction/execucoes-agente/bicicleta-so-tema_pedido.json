@@ -1,0 +1,66 @@
+{
+  "versao": 1,
+  "id": "ped_20261005-012108",
+  "criado_em": "2026-10-05T01:21:08-03:00",
+  "gatilho": "pedido",
+  "mapa": {
+    "versao": 1,
+    "recorte": "rec_bicicleta_tema",
+    "contexto": {
+      "tema": "Melhorar a mobilidade urbana em São Paulo, algo relacionado a bicicleta",
+      "pergunta_problema": ""
+    },
+    "atores": [],
+    "variaveis": [
+      {
+        "id": "var_1",
+        "nome": "Ciclovias",
+        "tipo": "neutra",
+        "atores": [],
+        "status": "aceita",
+        "autor": "mem_squad",
+        "posicao": {
+          "x": 100,
+          "y": 100
+        }
+      },
+      {
+        "id": "var_2",
+        "nome": "Ciclistas",
+        "tipo": "neutra",
+        "atores": [],
+        "status": "aceita",
+        "autor": "mem_squad",
+        "posicao": {
+          "x": 350,
+          "y": 100
+        }
+      }
+    ],
+    "setas": [],
+    "loops_anotados": [],
+    "analise": {},
+    "alavancas": []
+  },
+  "validacao": {
+    "loops": [],
+    "problemas": [
+      {
+        "codigo": "variavel_sem_ator",
+        "mensagem": "\"Ciclovias\" não está ligada a nenhum ator. Quem sofre, decide, paga ou opera isso? Sem ator nomeado, a causa vira opinião genérica.",
+        "refs": [
+          "var_1"
+        ]
+      },
+      {
+        "codigo": "variavel_sem_ator",
+        "mensagem": "\"Ciclistas\" não está ligada a nenhum ator. Quem sofre, decide, paga ou opera isso? Sem ator nomeado, a causa vira opinião genérica.",
+        "refs": [
+          "var_2"
+        ]
+      }
+    ]
+  },
+  "visoes_abertas": [],
+  "limite_visoes": 3
+}

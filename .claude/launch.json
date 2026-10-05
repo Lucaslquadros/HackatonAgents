@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "quadro-sistemico",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["C:/Faculdade/2026_2/Hakaton/Hack_OS/agente-sistemico/servidor.py", "8765"],
+      "port": 8765
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "id": "rit_01",
+  "recorte": "rec_lastmile",
+  "pergunta_generativa": "O que neste mapa te surpreendeu?",
+  "duracao_min": 5,
+  "aberto_em": "2026-10-04T10:30:00-03:00",
+  "encerrado_em": "2026-10-04T10:36:00-03:00",
+  "reflexoes": [
+    { "id": "ref_01", "autor": "mem_ana", "tipo": "percepcao", "texto": "A urgência que a operação cria para resolver o atraso é o que mais gera atraso.", "criado_em": "2026-10-04T10:32:00-03:00" },
+    { "id": "ref_02", "autor": "mem_bruno", "tipo": "pergunta", "texto": "Quem decide que uma rota é prioritária, e com que critério?", "criado_em": "2026-10-04T10:33:00-03:00" },
+    { "id": "ref_03", "autor": "mem_carla", "tipo": "percepcao", "texto": "Cada praça define a própria meta; talvez o problema seja diferente em cada cidade.", "criado_em": "2026-10-04T10:34:00-03:00" }
+  ],
+  "integracao": {
+    "cobertura": [
+      { "reflexao": "ref_01", "presente_no_mapa": true, "elementos": ["seta_04", "seta_05", "seta_06"] },
+      { "reflexao": "ref_02", "presente_no_mapa": true, "elementos": ["var_prioritarias"] },
+      { "reflexao": "ref_03", "presente_no_mapa": false }
+    ],
+    "divergencias": []
+  }
+}

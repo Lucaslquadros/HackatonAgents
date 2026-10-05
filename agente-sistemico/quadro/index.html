@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quadro Sistêmico</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="barra">
+    <strong class="marca">Quadro Sistêmico</strong>
+    <div class="grupo">
+      <button id="btn-novo" type="button">Novo</button>
+      <button id="btn-abrir" type="button">Abrir…</button>
+      <button id="btn-salvar" type="button">Salvar mapa.json</button>
+      <button id="btn-exemplo" type="button" title="Carrega o case last-mile da aula">Exemplo last-mile</button>
+      <input id="arquivo" type="file" accept=".json,application/json" hidden>
+    </div>
+    <div class="grupo">
+      <button id="btn-variavel" type="button">+ Variável</button>
+      <button id="btn-desfazer" type="button" title="Ctrl+Z">Desfazer</button>
+    </div>
+    <label class="autor">Autor
+      <input id="autor" type="text" size="12" pattern="[a-z]+_[a-z0-9_-]+" title="Id do membro no squad.json, ex.: mem_ana">
+    </label>
+  </header>
+
+  <main class="area">
+    <div class="tela-rolagem" id="rolagem">
+      <svg id="tela" width="2400" height="1600" role="application" aria-label="Quadro do diagrama de loop causal">
+        <defs>
+          <marker id="ponta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" class="ponta"></path>
+          </marker>
+          <marker id="ponta-sel" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" class="ponta-sel"></path>
+          </marker>
+        </defs>
+        <g id="camada-setas"></g>
+        <g id="camada-variaveis"></g>
+        <g id="camada-selos"></g>
+        <line id="ligacao-temporaria" class="ligacao-temporaria" style="display:none"></line>
+      </svg>
+    </div>
+
+    <aside class="lateral" id="lateral">
+      <nav class="abas" id="abas" role="tablist" aria-label="Painéis">
+        <button type="button" role="tab" id="aba-editar" aria-controls="inspetor">Editar</button>
+        <button type="button" role="tab" id="aba-analise" aria-controls="painel">Análise <span class="contador" id="contador" hidden></span></button>
+        <button type="button" role="tab" id="aba-visoes" aria-controls="visoes">Visões <span class="contador agente" id="contador-visoes" hidden></span></button>
+      </nav>
+      <div class="conteudo-aba" id="inspetor" role="tabpanel" aria-labelledby="aba-editar"></div>
+      <div class="conteudo-aba" id="painel" role="tabpanel" aria-labelledby="aba-analise" hidden></div>
+      <div class="conteudo-aba" id="visoes" role="tabpanel" aria-labelledby="aba-visoes" aria-live="polite" hidden></div>
+    </aside>
+  </main>
+
+  <footer class="status" id="status"></footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

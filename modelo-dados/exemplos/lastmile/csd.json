@@ -1,0 +1,69 @@
+{
+  "itens": [
+    {
+      "id": "csd_01",
+      "tipo": "certeza",
+      "texto": "Cancelamentos de pedidos por atraso cresceram 42% no trimestre.",
+      "autor": "mem_carla",
+      "criado_em": "2026-10-04T10:05:00-03:00",
+      "status": "confirmado",
+      "origem": { "etapa": "mapa_sistemico", "ref": "seta_10" },
+      "evidencias": [
+        { "tipo": "dado", "descricao": "Sinal 6 do case.", "referencia": "Case last-mile, quadro Miro da aula de DT, p. 4", "contem_dado_pessoal": false }
+      ]
+    },
+    {
+      "id": "csd_02",
+      "tipo": "suposicao",
+      "texto": "Realocar entregadores para urgências aumenta o tempo médio das entregas que ficaram nas rotas planejadas.",
+      "autor": "agente",
+      "criado_em": "2026-10-04T10:12:00-03:00",
+      "status": "confirmado",
+      "origem": { "etapa": "mapa_sistemico", "ref": "seta_06" },
+      "evidencias": [],
+      "importancia": "alta",
+      "pergunta_pesquisa": "Nas rotas que perderam entregadores por realocação, o tempo de entrega sobe em relação às rotas que não perderam?",
+      "hipotese": {
+        "se": "limitarmos as realocações a casos de risco de cancelamento",
+        "esperamos": "que o tempo médio de entrega caia nas rotas planejadas",
+        "porque": "as rotas deixam de ser desmontadas para atender urgências",
+        "rival": "O tempo sobe por falta de entregadores, não por realocação; limitar realocações não mudaria a média.",
+        "criterio_descarte": "Se em 2 semanas o tempo médio nas rotas protegidas não cair pelo menos 10%, descartamos.",
+        "metricas": {
+          "resultado": "Tempo médio de entrega",
+          "antecedente": "Número de realocações por dia",
+          "saude": "Cancelamentos por atraso e satisfação dos entregadores"
+        },
+        "experimento": {
+          "guardrail": "Uma praça, duas semanas, apenas rotas sem cliente estratégico.",
+          "amplificacao": "Tempo médio cai 10% ou mais sem subir cancelamentos: estender para mais duas praças.",
+          "interrupcao": "Cancelamentos sobem mais de 5% na praça-piloto: parar."
+        }
+      }
+    },
+    {
+      "id": "csd_03",
+      "tipo": "duvida",
+      "texto": "Qual é a capacidade real de entregas por entregador em cada praça?",
+      "autor": "mem_bruno",
+      "criado_em": "2026-10-04T10:15:00-03:00",
+      "status": "proposto",
+      "origem": { "etapa": "mapa_sistemico", "ref": "seta_03" },
+      "evidencias": [],
+      "importancia": "alta",
+      "tarefa_discovery": "Levantar entregas por entregador por turno nas três maiores praças e comparar com os pedidos aceitos."
+    },
+    {
+      "id": "csd_04",
+      "tipo": "suposicao",
+      "texto": "O atraso acontece porque os entregadores precisam ser mais rápidos (crença dos gestores).",
+      "autor": "mem_ana",
+      "criado_em": "2026-10-04T10:20:00-03:00",
+      "status": "confirmado",
+      "origem": { "etapa": "mapa_sistemico", "ref": "seta_09" },
+      "evidencias": [],
+      "importancia": "media",
+      "pergunta_pesquisa": "O tempo de deslocamento por entrega mudou nos últimos seis meses, ou o que cresceu foi o tempo de espera antes da coleta?"
+    }
+  ]
+}

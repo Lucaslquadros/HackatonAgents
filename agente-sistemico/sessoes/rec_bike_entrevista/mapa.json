@@ -1,0 +1,31 @@
+{
+  "versao": 1,
+  "recorte": "rec_bike_entrevista",
+  "contexto": {
+    "tema": "Mobilidade urbana em São Paulo, algo relacionado a bicicleta",
+    "pergunta_problema": "",
+    "descricao": "Situação: Pouca gente usa a bicicleta para ir ao trabalho ou à escola\nComportamento observado: As pessoas experimentam pedalar e depois desistem",
+    "horizonte_tempo": "Desde a expansão das ciclovias (por volta de 2014-2016); É uma suposição: ainda não temos dado."
+  },
+  "atores": [
+    {
+      "id": "ator_1",
+      "nome": "Trabalhadores da periferia que fazem trajetos longos",
+      "papeis": [
+        "sofre"
+      ]
+    },
+    {
+      "id": "ator_2",
+      "nome": "Mulheres que pedalam ou deixaram de pedalar",
+      "papeis": [
+        "sofre"
+      ]
+    }
+  ],
+  "variaveis": [],
+  "setas": [],
+  "loops_anotados": [],
+  "analise": {},
+  "alavancas": []
+}

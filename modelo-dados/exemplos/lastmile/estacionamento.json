@@ -1,0 +1,13 @@
+{
+  "itens": [
+    {
+      "id": "est_01",
+      "texto": "Um app de roteirização com IA para os entregadores.",
+      "autor": "mem_bruno",
+      "etapa_origem": "mapa_sistemico",
+      "retomar_em": "ideacao",
+      "criado_em": "2026-10-04T10:08:00-03:00",
+      "status": "estacionada"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "descricao": "Catálogo dos conceitos das aulas que uma visão do agente pode citar em fonte_teorica (com suplementar: false). A referência deve começar pelo rótulo exato; pode acrescentar um detalhe depois de dois-pontos (ex.: \"Arquétipos sistêmicos: soluções que falham\"). 'tipos' lista os tipos de visão para os quais o conceito faz sentido. Usado pelo prompt do agente e pelo validar_resposta.py.",
+  "fontes": [
+    { "rotulo": "CLD: variáveis, setas e mecanismo", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "validacao_relacao", "visao_ausente"] },
+    { "rotulo": "CLD: atrasos", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "validacao_relacao", "visao_ausente", "alavanca"] },
+    { "rotulo": "CLD: loops de reforço e balanceamento", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "visao_ausente", "validacao_relacao", "intervencao_programada"] },
+    { "rotulo": "Arquétipos sistêmicos", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "visao_ausente", "validacao_relacao", "alavanca", "intervencao_programada"] },
+    { "rotulo": "Meadows, pontos de alavancagem", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["alavanca", "visao_ausente", "intervencao_programada"] },
+    { "rotulo": "Iceberg: eventos, padrões, estrutura, modelos mentais", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["visao_ausente", "validacao_relacao"] },
+    { "rotulo": "Sintoma × causa × hipótese", "aula": "DT, sense making (12/08)", "tipos": ["validacao_relacao", "visao_ausente", "hipotese"] },
+    { "rotulo": "Vuja Dé: suspender a explicação oficial", "aula": "DT, Vuja Dé (05/08)", "tipos": ["validacao_relacao", "visao_ausente", "hipotese"] },
+    { "rotulo": "Mapear atores antes das causas", "aula": "Hackathons, Aula 4", "tipos": ["visao_ausente"] },
+    { "rotulo": "Cynefin", "aula": "DT (12/08) e Hackathons, Aula 4", "tipos": ["visao_ausente", "intervencao_programada", "hipotese"] },
+    { "rotulo": "Matriz CSD", "aula": "Hackathons, Aula 6", "tipos": ["validacao_relacao", "hipotese"] },
+    { "rotulo": "Experimento safe-to-fail", "aula": "DT, Cynefin (12/08)", "tipos": ["hipotese"] },
+    { "rotulo": "Trio de métricas: resultado, antecedente, saúde", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["hipotese", "alavanca"] },
+    { "rotulo": "Lei de Little", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["validacao_relacao", "visao_ausente", "alavanca"] },
+    { "rotulo": "Intervenções programadas do professor", "aula": "Quadro Miro de DT, dinâmica de pensamento sistêmico", "tipos": ["intervencao_programada"] },
+    { "rotulo": "Estacionamento (Lean Inception)", "aula": "Quadro Miro de DT, Lean Inception", "tipos": ["estacionar"] },
+    { "rotulo": "Teoria U: co-sensing e presencing", "aula": "DT, Teoria U (19/08 a 31/08) e Hackathons, Aula 5", "tipos": ["cobertura_ritual", "visao_ausente"] }
+  ]
+}

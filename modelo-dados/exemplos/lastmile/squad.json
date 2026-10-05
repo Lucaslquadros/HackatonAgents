@@ -1,0 +1,8 @@
+{
+  "hackathon": "Case last-mile (avaliação da aula de pensamento sistêmico)",
+  "membros": [
+    { "id": "mem_ana", "nome": "Ana", "frentes": ["dominio_negocio", "narrativa"] },
+    { "id": "mem_bruno", "nome": "Bruno", "frentes": ["construcao"] },
+    { "id": "mem_carla", "nome": "Carla", "frentes": ["dados_evidencias", "experiencia_ux"] }
+  ]
+}

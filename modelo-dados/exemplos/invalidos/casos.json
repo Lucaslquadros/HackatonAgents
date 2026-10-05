@@ -1,0 +1,113 @@
+{
+  "descricao": "Cada caso pega um exemplo válido, altera um ponto e diz qual garantia do modelo deve recusar a alteração. 'caminho' é a lista de chaves/índices até o campo; 'valor' é o novo conteúdo; 'remover': true apaga o campo.",
+  "casos": [
+    {
+      "nome": "alavanca_com_solucao_de_produto",
+      "garantia": "Alavanca diz onde intervir, nunca o que construir: não existe campo de solução.",
+      "def": "mapa",
+      "base": "lastmile/mapa.json",
+      "caminho": ["alavancas", 0, "solucao"],
+      "valor": "Construir um app de roteirização com IA",
+      "espera_keyword": "additionalProperties"
+    },
+    {
+      "nome": "certeza_sem_evidencia",
+      "garantia": "Na Matriz CSD, certeza só entra com evidência anexada.",
+      "def": "csd",
+      "base": "lastmile/csd.json",
+      "caminho": ["itens", 0, "evidencias"],
+      "valor": [],
+      "espera_keyword": "minItems"
+    },
+    {
+      "nome": "suposicao_sem_pergunta_de_pesquisa",
+      "garantia": "Toda suposição vira pergunta de pesquisa (Aula 6).",
+      "def": "csd",
+      "base": "lastmile/csd.json",
+      "caminho": ["itens", 3, "pergunta_pesquisa"],
+      "remover": true,
+      "espera_keyword": "required"
+    },
+    {
+      "nome": "evidencia_com_dado_pessoal",
+      "garantia": "Nenhuma evidência guarda dado pessoal identificável (LGPD).",
+      "def": "csd",
+      "base": "lastmile/csd.json",
+      "caminho": ["itens", 0, "evidencias", 0, "contem_dado_pessoal"],
+      "valor": true,
+      "espera_keyword": "const"
+    },
+    {
+      "nome": "seta_certeza_sem_fonte",
+      "garantia": "Seta marcada como certeza precisa de fonte.",
+      "def": "mapa",
+      "base": "lastmile/mapa.json",
+      "caminho": ["setas", 0, "fonte"],
+      "remover": true,
+      "espera_keyword": "required"
+    },
+    {
+      "nome": "seta_sem_mecanismo",
+      "garantia": "Toda seta tem mecanismo (sem ele, é 'fofoca com setas').",
+      "def": "mapa",
+      "base": "lastmile/mapa.json",
+      "caminho": ["setas", 2, "mecanismo"],
+      "remover": true,
+      "espera_keyword": "required"
+    },
+    {
+      "nome": "visao_do_tipo_solucao",
+      "garantia": "O motor do agente não tem um tipo de visão 'solução'.",
+      "def": "resposta_visao",
+      "base": "lastmile/resposta-visao.json",
+      "caminho": ["visoes", 0, "tipo"],
+      "valor": "solucao",
+      "espera_keyword": "enum"
+    },
+    {
+      "nome": "visao_que_nao_termina_em_pergunta",
+      "garantia": "Toda visão termina em pergunta ao squad.",
+      "def": "resposta_visao",
+      "base": "lastmile/resposta-visao.json",
+      "caminho": ["visoes", 1, "pergunta"],
+      "valor": "Vocês deveriam incluir os indicadores de cada área.",
+      "espera_keyword": "pattern"
+    },
+    {
+      "nome": "conexao_sugerida_sem_proposta",
+      "garantia": "Conexão sugerida precisa da seta proposta para virar seta fantasma.",
+      "def": "resposta_visao",
+      "base": "lastmile/resposta-visao.json",
+      "caminho": ["visoes", 2, "tipo"],
+      "valor": "conexao_sugerida",
+      "espera_keyword": "required"
+    },
+    {
+      "nome": "motor_com_visoes_demais",
+      "garantia": "No máximo 5 visões por resposta (painel barulhento).",
+      "def": "resposta_visao",
+      "base": "lastmile/resposta-visao.json",
+      "caminho": ["visoes"],
+      "duplicar_lista": 2,
+      "espera_keyword": "maxItems"
+    },
+    {
+      "nome": "data_hora_em_texto_livre",
+      "garantia": "Datas seguem ISO 8601, para o histórico poder ser ordenado.",
+      "def": "csd",
+      "base": "lastmile/csd.json",
+      "caminho": ["itens", 0, "criado_em"],
+      "valor": "ontem de manhã",
+      "espera_keyword": "format"
+    },
+    {
+      "nome": "loop_classificado_pelo_llm_com_tipo_invalido",
+      "garantia": "Loop calculado só pode ser R ou B.",
+      "def": "pedido_visao",
+      "base": "lastmile/pedido-visao.json",
+      "caminho": ["validacao", "loops", 0, "tipo"],
+      "valor": "reforco",
+      "espera_keyword": "enum"
+    }
+  ]
+}

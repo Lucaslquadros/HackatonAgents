@@ -1,0 +1,718 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hackos.local/modelo-dados/hackos.schema.json",
+  "title": "Hack_OS — modelo de dados compartilhado",
+  "description": "Objetos trocados entre quadro, painel, motor do agente, aba CSD, ritual do fundo do U, estacionamento e glossário. Cada documento de topo é um $def; os testes validam cada arquivo contra o $def correspondente. Ver README.md.",
+  "$defs": {
+
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z]+_[a-z0-9_-]+$",
+      "description": "Identificador com prefixo do tipo: var_, seta_, ator_, csd_, mem_, vis_, ref_, rit_, est_, glo_, alv_, ped_."
+    },
+    "autor": {
+      "description": "Id de um membro do squad, ou 'agente' quando a origem é a IA.",
+      "anyOf": [
+        { "$ref": "#/$defs/id" },
+        { "const": "agente" }
+      ]
+    },
+    "data_hora": { "type": "string", "format": "date-time" },
+    "texto_curto": { "type": "string", "minLength": 1, "maxLength": 280 },
+    "texto": { "type": "string", "minLength": 1, "maxLength": 2000 },
+
+    "etapa": {
+      "description": "Etapas do fluxo do app (FLUXO-PEDAGOGICO.md, seção 2).",
+      "enum": [
+        "pacto", "enquadrar", "panorama", "campo", "ranqueamento", "cynefin",
+        "mapa_sistemico", "ritual_u", "framing", "ideacao", "decidir",
+        "validacao", "construir", "narrar", "defender"
+      ]
+    },
+    "classificacao_csd": {
+      "description": "Vocabulário da Matriz CSD (Aula 6) para o grau de evidência de uma afirmação.",
+      "enum": ["certeza", "suposicao", "duvida"]
+    },
+    "nivel_meadows": {
+      "description": "Escala de alavancagem da aula, do mais fraco ao mais forte.",
+      "enum": ["parametro", "atraso_feedback", "fluxo_informacao", "regra", "meta", "modelo_mental"]
+    },
+    "dominio_cynefin": {
+      "enum": ["claro", "complicado", "complexo", "caotico", "confusao"]
+    },
+    "status_sugestao": {
+      "description": "Ciclo de vida de algo proposto pelo agente: só vira 'aceita' por decisão do squad.",
+      "enum": ["fantasma", "aceita", "recusada"]
+    },
+    "fonte_teorica": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["referencia", "suplementar"],
+      "properties": {
+        "referencia": { "$ref": "#/$defs/texto_curto" },
+        "suplementar": {
+          "type": "boolean",
+          "description": "true quando o conceito não vem do material das disciplinas (FLUXO-PEDAGOGICO.md, seção 9)."
+        }
+      }
+    },
+
+    "membro": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nome"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "nome": { "$ref": "#/$defs/texto_curto" },
+        "frentes": {
+          "description": "As 5 frentes do squad (Aula 3).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "enum": ["dominio_negocio", "construcao", "experiencia_ux", "dados_evidencias", "narrativa"] }
+        }
+      }
+    },
+    "squad": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hackathon", "membros"],
+      "properties": {
+        "hackathon": { "$ref": "#/$defs/texto_curto" },
+        "membros": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/membro" } }
+      }
+    },
+
+    "evidencia": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tipo", "descricao", "contem_dado_pessoal"],
+      "properties": {
+        "tipo": { "enum": ["fonte_publica", "entrevista", "observacao", "dado", "experimento", "estimativa"] },
+        "descricao": { "$ref": "#/$defs/texto" },
+        "referencia": {
+          "description": "Link, citação ou número da entrevista. Para 'estimativa', a conta aberta.",
+          "$ref": "#/$defs/texto"
+        },
+        "data": { "type": "string", "format": "date" },
+        "contem_dado_pessoal": {
+          "const": false,
+          "description": "Governança/LGPD (Aula 14 e política de IA dos planos): nenhuma evidência guarda dado pessoal identificável."
+        }
+      }
+    },
+    "hipotese": {
+      "description": "Formato da aula: 'Se X, esperamos Y, porque Z', com hipótese rival e critério de descarte (Vuja Dé), trio de métricas e experimento safe-to-fail (Cynefin).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["se", "esperamos", "porque", "criterio_descarte"],
+      "properties": {
+        "se": { "$ref": "#/$defs/texto" },
+        "esperamos": { "$ref": "#/$defs/texto" },
+        "porque": { "$ref": "#/$defs/texto" },
+        "rival": { "$ref": "#/$defs/texto" },
+        "criterio_descarte": { "$ref": "#/$defs/texto" },
+        "metricas": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "resultado": { "$ref": "#/$defs/texto_curto" },
+            "antecedente": { "$ref": "#/$defs/texto_curto" },
+            "saude": { "$ref": "#/$defs/texto_curto" }
+          }
+        },
+        "experimento": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["guardrail", "amplificacao", "interrupcao"],
+          "properties": {
+            "guardrail": { "$ref": "#/$defs/texto" },
+            "amplificacao": { "$ref": "#/$defs/texto" },
+            "interrupcao": { "$ref": "#/$defs/texto" }
+          }
+        }
+      }
+    },
+    "item_csd": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "tipo", "texto", "autor", "criado_em", "status", "origem", "evidencias"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "tipo": { "$ref": "#/$defs/classificacao_csd" },
+        "texto": { "$ref": "#/$defs/texto" },
+        "autor": { "$ref": "#/$defs/autor" },
+        "criado_em": { "$ref": "#/$defs/data_hora" },
+        "status": {
+          "description": "O agente só cria itens 'proposto'; quem confirma é o squad.",
+          "enum": ["proposto", "confirmado", "descartado"]
+        },
+        "origem": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["etapa"],
+          "properties": {
+            "etapa": { "$ref": "#/$defs/etapa" },
+            "ref": { "$ref": "#/$defs/id" }
+          }
+        },
+        "evidencias": { "type": "array", "items": { "$ref": "#/$defs/evidencia" } },
+        "importancia": {
+          "description": "Suplementar (Bland, mapa de suposições): ordena o que testar primeiro.",
+          "enum": ["baixa", "media", "alta"]
+        },
+        "pergunta_pesquisa": { "$ref": "#/$defs/texto" },
+        "tarefa_discovery": { "$ref": "#/$defs/texto" },
+        "hipotese": { "$ref": "#/$defs/hipotese" },
+        "ligacoes": {
+          "description": "Reservado para a Opportunity Solution Tree (Torres) e para a etapa de validação.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "oportunidade": { "$ref": "#/$defs/id" },
+            "teste": { "$ref": "#/$defs/id" }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "tipo": { "const": "certeza" } } },
+          "then": { "properties": { "evidencias": { "minItems": 1 } } }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "suposicao" } } },
+          "then": { "required": ["pergunta_pesquisa"] }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "duvida" } } },
+          "then": { "required": ["tarefa_discovery"] }
+        }
+      ]
+    },
+    "csd": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["itens"],
+      "properties": {
+        "itens": { "type": "array", "items": { "$ref": "#/$defs/item_csd" } }
+      }
+    },
+
+    "ator": {
+      "description": "Aula 4: mapear atores antes de causas.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nome", "papeis"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "nome": { "$ref": "#/$defs/texto_curto" },
+        "papeis": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["sofre", "decide", "paga", "opera", "regula", "outro"] }
+        }
+      }
+    },
+    "posicao": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+    },
+    "variavel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nome", "tipo", "status", "autor", "posicao"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "nome": {
+          "description": "Substantivo neutro e mensurável (checado pelo validador, não pelo schema).",
+          "$ref": "#/$defs/texto_curto"
+        },
+        "tipo": {
+          "description": "Cores do template da aula: neutra (azul), problema (vermelho), resultado desejado (verde).",
+          "enum": ["neutra", "problema", "resultado"]
+        },
+        "atores": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+        "status": { "$ref": "#/$defs/status_sugestao" },
+        "autor": { "$ref": "#/$defs/autor" },
+        "motivo_recusa": { "$ref": "#/$defs/texto" },
+        "posicao": { "$ref": "#/$defs/posicao" }
+      }
+    },
+    "seta": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "de", "para", "polaridade", "atraso", "mecanismo", "classificacao", "status", "autor"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "de": { "$ref": "#/$defs/id" },
+        "para": { "$ref": "#/$defs/id" },
+        "polaridade": { "enum": ["+", "-"] },
+        "atraso": { "type": "boolean" },
+        "atraso_descricao": { "$ref": "#/$defs/texto_curto" },
+        "mecanismo": {
+          "description": "Por que A move B, em uma frase. Sem mecanismo, a seta é 'fofoca com setas'.",
+          "$ref": "#/$defs/texto"
+        },
+        "classificacao": {
+          "description": "Certeza (com fonte) ou suposição; dúvida não vira seta.",
+          "enum": ["certeza", "suposicao"]
+        },
+        "fonte": { "$ref": "#/$defs/texto" },
+        "csd_item": { "$ref": "#/$defs/id" },
+        "status": { "$ref": "#/$defs/status_sugestao" },
+        "autor": { "$ref": "#/$defs/autor" },
+        "motivo_recusa": { "$ref": "#/$defs/texto" }
+      },
+      "if": { "properties": { "classificacao": { "const": "certeza" } } },
+      "then": { "required": ["fonte"] }
+    },
+    "loop_anotado": {
+      "description": "Os loops são calculados pelo validador; aqui o squad dá nome, história e, para B, meta e lacuna. A chave é o conjunto de setas do ciclo.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["setas", "nome"],
+      "properties": {
+        "setas": { "type": "array", "minItems": 2, "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+        "nome": { "$ref": "#/$defs/texto_curto" },
+        "historia": { "$ref": "#/$defs/texto" },
+        "meta": { "$ref": "#/$defs/texto_curto" },
+        "lacuna": { "$ref": "#/$defs/texto_curto" }
+      }
+    },
+    "analise": {
+      "description": "Bloco 3 do template da aula.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "loop_principal": { "type": "array", "uniqueItems": true, "items": { "$ref": "#/$defs/id" } },
+        "cynefin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dominio", "justificativa"],
+          "properties": {
+            "dominio": { "$ref": "#/$defs/dominio_cynefin" },
+            "justificativa": { "$ref": "#/$defs/texto" }
+          }
+        },
+        "delay_identificado": { "$ref": "#/$defs/texto" },
+        "variavel_ignorada": { "$ref": "#/$defs/texto" },
+        "arquetipo": {
+          "enum": ["solucoes_que_falham", "transferencia_responsabilidade", "limites_ao_crescimento", "escalada", "tragedia_dos_comuns", "sucesso_para_bem_sucedidos"]
+        },
+        "comportamento_no_tempo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["variavel", "descricao"],
+          "properties": {
+            "variavel": { "$ref": "#/$defs/id" },
+            "descricao": { "$ref": "#/$defs/texto" }
+          }
+        }
+      }
+    },
+    "alavanca": {
+      "description": "Bloco 4 do template. Diz ONDE intervir, nunca O QUE construir: não existe campo de solução, e additionalProperties:false impede criá-lo.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "alvo", "nivel_meadows", "impacto_esperado", "teste_sanidade", "autor"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "alvo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tipo", "refs"],
+          "properties": {
+            "tipo": { "enum": ["variavel", "seta", "loop"] },
+            "refs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } }
+          }
+        },
+        "nivel_meadows": { "$ref": "#/$defs/nivel_meadows" },
+        "impacto_esperado": { "$ref": "#/$defs/texto" },
+        "teste_sanidade": {
+          "description": "'Se aumentarmos X, o sistema melhora ou piora?'",
+          "$ref": "#/$defs/texto"
+        },
+        "suposicoes": {
+          "description": "Itens da CSD de que a alavanca depende (o painel mostra a contagem).",
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "autor": { "$ref": "#/$defs/autor" }
+      }
+    },
+    "mapa": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["versao", "recorte", "contexto", "atores", "variaveis", "setas", "loops_anotados", "analise", "alavancas"],
+      "properties": {
+        "versao": { "const": 1 },
+        "recorte": { "$ref": "#/$defs/id" },
+        "contexto": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tema"],
+          "properties": {
+            "tema": { "$ref": "#/$defs/texto_curto" },
+            "descricao": { "$ref": "#/$defs/texto" },
+            "pergunta_problema": {
+              "description": "Passo 1 do método: 'por que X piorou apesar de Y?'. Pode faltar enquanto a entrevista (Bolt 7) não terminou; sem ela o agente entrevista em vez de analisar, e o quadro mostra a pendência.",
+              "$ref": "#/$defs/texto"
+            },
+            "horizonte_tempo": { "$ref": "#/$defs/texto_curto" },
+            "fronteira": { "$ref": "#/$defs/texto" },
+            "fonte_enquadrador": {
+              "description": "Caminho opcional para a saída do Agente Enquadrador.",
+              "type": "string"
+            }
+          }
+        },
+        "atores": { "type": "array", "items": { "$ref": "#/$defs/ator" } },
+        "variaveis": { "type": "array", "items": { "$ref": "#/$defs/variavel" } },
+        "setas": { "type": "array", "items": { "$ref": "#/$defs/seta" } },
+        "loops_anotados": { "type": "array", "items": { "$ref": "#/$defs/loop_anotado" } },
+        "analise": { "$ref": "#/$defs/analise" },
+        "alavancas": { "type": "array", "items": { "$ref": "#/$defs/alavanca" } }
+      }
+    },
+
+    "reflexao": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "autor", "tipo", "texto", "criado_em"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "autor": { "$ref": "#/$defs/id" },
+        "tipo": { "enum": ["percepcao", "pergunta"] },
+        "texto": { "$ref": "#/$defs/texto" },
+        "criado_em": { "$ref": "#/$defs/data_hora" }
+      }
+    },
+    "ritual": {
+      "description": "Ritual do fundo do U (FLUXO-PEDAGOGICO.md 5.1); técnica 'você faz, eu faço, depois comparamos'.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "recorte", "pergunta_generativa", "duracao_min", "aberto_em", "reflexoes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "recorte": { "$ref": "#/$defs/id" },
+        "pergunta_generativa": { "$ref": "#/$defs/texto_curto" },
+        "duracao_min": { "type": "integer", "minimum": 3, "maximum": 15 },
+        "aberto_em": { "$ref": "#/$defs/data_hora" },
+        "encerrado_em": { "$ref": "#/$defs/data_hora" },
+        "seguiu_sem": {
+          "description": "Membros que não enviaram reflexão e o squad decidiu seguir mesmo assim.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/id" }
+        },
+        "reflexoes": { "type": "array", "items": { "$ref": "#/$defs/reflexao" } },
+        "integracao": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cobertura": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["reflexao", "presente_no_mapa"],
+                "properties": {
+                  "reflexao": { "$ref": "#/$defs/id" },
+                  "presente_no_mapa": { "type": "boolean" },
+                  "elementos": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+                }
+              }
+            },
+            "divergencias": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["reflexoes", "descricao"],
+                "properties": {
+                  "reflexoes": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/id" } },
+                  "descricao": { "$ref": "#/$defs/texto" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "ideia_estacionada": {
+      "description": "Parking lot do Lean Inception: 'ouvi, mas essa conversa é para depois'.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "texto", "autor", "etapa_origem", "criado_em", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "texto": { "$ref": "#/$defs/texto" },
+        "autor": { "$ref": "#/$defs/autor" },
+        "etapa_origem": { "$ref": "#/$defs/etapa" },
+        "retomar_em": { "$ref": "#/$defs/etapa" },
+        "criado_em": { "$ref": "#/$defs/data_hora" },
+        "status": { "enum": ["estacionada", "retomada", "descartada"] }
+      }
+    },
+    "estacionamento": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["itens"],
+      "properties": { "itens": { "type": "array", "items": { "$ref": "#/$defs/ideia_estacionada" } } }
+    },
+
+    "termo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "termo", "definicao", "autor"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "termo": { "$ref": "#/$defs/texto_curto" },
+        "definicao": { "$ref": "#/$defs/texto" },
+        "fonte": { "$ref": "#/$defs/texto" },
+        "autor": { "$ref": "#/$defs/autor" }
+      }
+    },
+    "glossario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["termos"],
+      "properties": { "termos": { "type": "array", "items": { "$ref": "#/$defs/termo" } } }
+    },
+
+    "campo_entrevista": {
+      "description": "Onde a resposta do squad entra no mapa (Bolt 7). 'certezas', 'suposicoes' e 'outro' ficam registradas na entrevista até a aba CSD existir (Bolt 8).",
+      "enum": ["situacao", "afetados", "decisores", "comportamento", "horizonte_tempo", "fronteira", "certezas", "suposicoes", "pergunta_problema", "outro"]
+    },
+    "pergunta_entrevista": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "pergunta", "campo"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "pergunta": { "$ref": "#/$defs/texto", "pattern": "\\?\\s*$" },
+        "ajuda": { "$ref": "#/$defs/texto_curto" },
+        "opcoes": {
+          "description": "Opções sugeridas; o squad sempre pode escrever a própria resposta.",
+          "type": "array",
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/texto_curto" }
+        },
+        "multipla": { "type": "boolean", "description": "Se o squad pode marcar mais de uma opção." },
+        "campo": { "$ref": "#/$defs/campo_entrevista" }
+      }
+    },
+    "rodada_entrevista": {
+      "description": "Uma rodada da conversa guiada (decisão 12 do Inception).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rodada", "objetivo", "perguntas"],
+      "properties": {
+        "rodada": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "objetivo": { "$ref": "#/$defs/texto_curto" },
+        "perguntas": { "type": "array", "minItems": 1, "maxItems": 5, "items": { "$ref": "#/$defs/pergunta_entrevista" } }
+      }
+    },
+    "resposta_entrevista": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pergunta"],
+      "properties": {
+        "pergunta": { "$ref": "#/$defs/id" },
+        "opcoes": { "type": "array", "items": { "$ref": "#/$defs/texto_curto" } },
+        "texto": { "$ref": "#/$defs/texto" },
+        "pulada": { "type": "boolean" }
+      }
+    },
+    "entrevista": {
+      "description": "Histórico da entrevista de um recorte: cada rodada com as perguntas do agente e as respostas do squad.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rodadas"],
+      "properties": {
+        "rodadas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["rodada", "objetivo", "perguntas"],
+            "properties": {
+              "rodada": { "type": "integer", "minimum": 1, "maximum": 5 },
+              "pedido": { "$ref": "#/$defs/id" },
+              "objetivo": { "$ref": "#/$defs/texto_curto" },
+              "perguntas": { "type": "array", "items": { "$ref": "#/$defs/pergunta_entrevista" } },
+              "respostas": { "type": "array", "items": { "$ref": "#/$defs/resposta_entrevista" } }
+            }
+          }
+        },
+        "encerrada": { "type": "boolean", "description": "O squad aceitou a proposta de contexto ou pulou a entrevista." },
+        "proposta": { "$ref": "#/$defs/proposta_contexto" }
+      }
+    },
+    "proposta_contexto": {
+      "description": "Fim da entrevista: o agente propõe; o squad aceita ou edita antes de entrar no mapa.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pergunta_problema"],
+      "properties": {
+        "pergunta_problema": { "$ref": "#/$defs/texto", "pattern": "\\?\\s*$" },
+        "fronteira": { "$ref": "#/$defs/texto" },
+        "horizonte_tempo": { "$ref": "#/$defs/texto_curto" },
+        "justificativa": { "$ref": "#/$defs/texto" }
+      }
+    },
+
+    "loop_calculado": {
+      "description": "Saída do validador instantâneo (Bolt 1): nunca vem do LLM.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["setas", "negativas", "tipo"],
+      "properties": {
+        "setas": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/id" } },
+        "negativas": { "type": "integer", "minimum": 0 },
+        "tipo": { "enum": ["R", "B"] },
+        "tem_atraso": { "type": "boolean" }
+      }
+    },
+    "problema_validacao": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["codigo", "mensagem"],
+      "properties": {
+        "codigo": {
+          "enum": ["b_sem_meta", "variavel_fora_de_loop", "excesso_variaveis", "nome_com_verbo_ou_direcao", "seta_sem_mecanismo", "nenhum_loop", "variavel_sem_ator", "seta_orfa"]
+        },
+        "mensagem": { "$ref": "#/$defs/texto" },
+        "refs": { "type": "array", "items": { "$ref": "#/$defs/id" } }
+      }
+    },
+    "pedido_visao": {
+      "description": "Entrada do motor do agente. Contrato fixo: na opção (c) quem lê é uma sessão do Claude Code; depois, a API do Claude.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["versao", "id", "criado_em", "gatilho", "mapa", "validacao", "limite_visoes"],
+      "properties": {
+        "versao": { "const": 1 },
+        "id": { "$ref": "#/$defs/id" },
+        "criado_em": { "$ref": "#/$defs/data_hora" },
+        "gatilho": { "enum": ["pausa", "pedido", "pos_ritual", "selecao_seta", "entrevista"] },
+        "entrevista": { "$ref": "#/$defs/entrevista" },
+        "seta_selecionada": { "$ref": "#/$defs/id" },
+        "cynefin": { "$ref": "#/$defs/dominio_cynefin" },
+        "mapa": { "$ref": "#/$defs/mapa" },
+        "validacao": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["loops", "problemas"],
+          "properties": {
+            "loops": { "type": "array", "items": { "$ref": "#/$defs/loop_calculado" } },
+            "problemas": { "type": "array", "items": { "$ref": "#/$defs/problema_validacao" } }
+          }
+        },
+        "csd": { "$ref": "#/$defs/csd" },
+        "ritual": { "$ref": "#/$defs/ritual" },
+        "estacionamento": {
+          "description": "Ideias já estacionadas, para o agente não sugerir estacionar de novo.",
+          "$ref": "#/$defs/estacionamento"
+        },
+        "visoes_abertas": {
+          "description": "Visões ainda sem resposta do squad, para o agente não repetir.",
+          "type": "array",
+          "items": { "$ref": "#/$defs/visao" }
+        },
+        "limite_visoes": { "type": "integer", "minimum": 1, "maximum": 5 }
+      },
+      "if": { "properties": { "gatilho": { "const": "selecao_seta" } } },
+      "then": { "required": ["seta_selecionada"] }
+    },
+    "visao": {
+      "description": "Uma visão do painel. Não existe tipo 'solucao'. Toda visão termina em pergunta ao squad.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "tipo", "texto", "pergunta", "refs", "fonte_teorica", "status"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "tipo": {
+          "enum": ["conexao_sugerida", "visao_ausente", "validacao_relacao", "intervencao_programada", "alavanca", "hipotese", "estacionar", "cobertura_ritual"]
+        },
+        "texto": { "$ref": "#/$defs/texto" },
+        "pergunta": {
+          "$ref": "#/$defs/texto",
+          "pattern": "\\?\\s*$"
+        },
+        "refs": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "fonte_teorica": { "$ref": "#/$defs/fonte_teorica" },
+        "proposta_seta": {
+          "description": "Só em conexao_sugerida: vira seta 'fantasma' no quadro.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["de", "para", "polaridade", "atraso", "mecanismo"],
+          "properties": {
+            "de": { "$ref": "#/$defs/id" },
+            "para": { "$ref": "#/$defs/id" },
+            "polaridade": { "enum": ["+", "-"] },
+            "atraso": { "type": "boolean" },
+            "mecanismo": { "$ref": "#/$defs/texto" }
+          }
+        },
+        "proposta_variavel": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nome", "tipo"],
+          "properties": {
+            "nome": { "$ref": "#/$defs/texto_curto" },
+            "tipo": { "enum": ["neutra", "problema", "resultado"] }
+          }
+        },
+        "proposta_csd": {
+          "description": "Item proposto para a aba CSD (o squad confirma).",
+          "$ref": "#/$defs/item_csd"
+        },
+        "nivel_meadows": { "$ref": "#/$defs/nivel_meadows" },
+        "texto_estacionado": { "$ref": "#/$defs/texto" },
+        "status": { "enum": ["aberta", "aceita", "recusada", "respondida"] },
+        "motivo_recusa": { "$ref": "#/$defs/texto" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "tipo": { "const": "conexao_sugerida" } } },
+          "then": { "required": ["proposta_seta"] }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "alavanca" } } },
+          "then": { "required": ["nivel_meadows"] }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "estacionar" } } },
+          "then": { "required": ["texto_estacionado"] }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "hipotese" } } },
+          "then": { "required": ["proposta_csd"] }
+        }
+      ]
+    },
+    "resposta_visao": {
+      "description": "Saída do motor do agente.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["versao", "pedido", "criado_em", "visoes"],
+      "properties": {
+        "versao": { "const": 1 },
+        "pedido": { "$ref": "#/$defs/id" },
+        "criado_em": { "$ref": "#/$defs/data_hora" },
+        "informacao_insuficiente": {
+          "description": "Mesmo princípio do Agente 1: se o mapa não sustenta análise, dizer o que falta em vez de inventar.",
+          "type": "boolean"
+        },
+        "visoes": { "type": "array", "maxItems": 5, "items": { "$ref": "#/$defs/visao" } },
+        "entrevista": { "$ref": "#/$defs/rodada_entrevista" },
+        "proposta_contexto": { "$ref": "#/$defs/proposta_contexto" }
+      }
+    }
+  }
+}

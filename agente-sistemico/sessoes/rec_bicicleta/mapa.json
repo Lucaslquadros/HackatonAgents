@@ -1,0 +1,324 @@
+{
+  "versao": 1,
+  "recorte": "rec_bicicleta",
+  "contexto": {
+    "tema": "Mobilidade por bicicleta em São Paulo",
+    "pergunta_problema": "Por que a bicicleta continua pouco usada como meio de transporte em São Paulo, apesar da expansão das ciclovias?",
+    "descricao": "Rascunho inicial para teste do agente. Mecanismos tirados da literatura de mobilidade ativa (segurança em números, rede conectada); nenhum dado de São Paulo verificado ainda.",
+    "horizonte_tempo": "Últimos anos",
+    "fronteira": "Deslocamentos do dia a dia (trabalho e estudo) de bicicleta. Ficam de fora o lazer e os entregadores de aplicativo."
+  },
+  "atores": [
+    {
+      "id": "ator_1",
+      "nome": "Ciclistas",
+      "papeis": [
+        "sofre"
+      ]
+    },
+    {
+      "id": "ator_2",
+      "nome": "Quem poderia pedalar e não pedala",
+      "papeis": [
+        "sofre"
+      ]
+    },
+    {
+      "id": "ator_3",
+      "nome": "Motoristas",
+      "papeis": [
+        "opera"
+      ]
+    },
+    {
+      "id": "ator_4",
+      "nome": "Prefeitura e CET",
+      "papeis": [
+        "decide",
+        "paga"
+      ]
+    },
+    {
+      "id": "ator_5",
+      "nome": "Opinião pública e imprensa",
+      "papeis": [
+        "outro"
+      ]
+    }
+  ],
+  "variaveis": [
+    {
+      "id": "var_1",
+      "nome": "Investimento em infraestrutura cicloviária",
+      "tipo": "neutra",
+      "atores": [
+        "ator_4"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 80,
+        "y": 60
+      }
+    },
+    {
+      "id": "var_2",
+      "nome": "Extensão da rede de ciclovias",
+      "tipo": "neutra",
+      "atores": [
+        "ator_4"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 360,
+        "y": 60
+      }
+    },
+    {
+      "id": "var_3",
+      "nome": "Conectividade da rede",
+      "tipo": "neutra",
+      "atores": [
+        "ator_4",
+        "ator_1"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 640,
+        "y": 60
+      }
+    },
+    {
+      "id": "var_4",
+      "nome": "Percepção de segurança ao pedalar",
+      "tipo": "resultado",
+      "atores": [
+        "ator_1",
+        "ator_2"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 640,
+        "y": 300
+      }
+    },
+    {
+      "id": "var_5",
+      "nome": "Número de ciclistas nas ruas",
+      "tipo": "resultado",
+      "atores": [
+        "ator_1"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 360,
+        "y": 300
+      }
+    },
+    {
+      "id": "var_6",
+      "nome": "Atenção dos motoristas a ciclistas",
+      "tipo": "neutra",
+      "atores": [
+        "ator_3"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 360,
+        "y": 520
+      }
+    },
+    {
+      "id": "var_7",
+      "nome": "Acidentes envolvendo ciclistas",
+      "tipo": "problema",
+      "atores": [
+        "ator_1",
+        "ator_3"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 640,
+        "y": 520
+      }
+    },
+    {
+      "id": "var_8",
+      "nome": "Uso aparente das ciclovias",
+      "tipo": "neutra",
+      "atores": [
+        "ator_5"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 80,
+        "y": 300
+      }
+    },
+    {
+      "id": "var_9",
+      "nome": "Apoio público a novas ciclovias",
+      "tipo": "neutra",
+      "atores": [
+        "ator_5",
+        "ator_4"
+      ],
+      "status": "aceita",
+      "autor": "mem_squad",
+      "posicao": {
+        "x": 80,
+        "y": 180
+      }
+    }
+  ],
+  "setas": [
+    {
+      "id": "seta_01",
+      "de": "var_1",
+      "para": "var_2",
+      "polaridade": "+",
+      "atraso": true,
+      "mecanismo": "Mais orçamento vira mais quilômetros de ciclovia.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad",
+      "atraso_descricao": "Meses: projeto, licitação e obra"
+    },
+    {
+      "id": "seta_02",
+      "de": "var_2",
+      "para": "var_3",
+      "polaridade": "+",
+      "atraso": false,
+      "mecanismo": "Com mais trechos, aumenta a chance de a rede ligar origem e destino sem buracos.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad"
+    },
+    {
+      "id": "seta_03",
+      "de": "var_3",
+      "para": "var_4",
+      "polaridade": "+",
+      "atraso": false,
+      "mecanismo": "Quando o trajeto inteiro é protegido, o ciclista não precisa disputar espaço com carros em nenhum trecho.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad"
+    },
+    {
+      "id": "seta_04",
+      "de": "var_4",
+      "para": "var_5",
+      "polaridade": "+",
+      "atraso": true,
+      "mecanismo": "Quem se sente seguro passa a usar a bicicleta no dia a dia.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad",
+      "atraso_descricao": "Hábito de deslocamento muda devagar"
+    },
+    {
+      "id": "seta_05",
+      "de": "var_5",
+      "para": "var_6",
+      "polaridade": "+",
+      "atraso": false,
+      "mecanismo": "Com mais ciclistas, motoristas se acostumam a esperar bicicletas na via (segurança em números).",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad"
+    },
+    {
+      "id": "seta_06",
+      "de": "var_6",
+      "para": "var_7",
+      "polaridade": "-",
+      "atraso": false,
+      "mecanismo": "Motoristas atentos a ciclistas fazem menos manobras que causam acidentes.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad"
+    },
+    {
+      "id": "seta_07",
+      "de": "var_7",
+      "para": "var_4",
+      "polaridade": "-",
+      "atraso": false,
+      "mecanismo": "Acidentes, sobretudo os que viram notícia, reduzem a sensação de segurança.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad"
+    },
+    {
+      "id": "seta_08",
+      "de": "var_5",
+      "para": "var_8",
+      "polaridade": "+",
+      "atraso": false,
+      "mecanismo": "Mais ciclistas fazem as ciclovias parecerem usadas.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad"
+    },
+    {
+      "id": "seta_09",
+      "de": "var_8",
+      "para": "var_9",
+      "polaridade": "+",
+      "atraso": false,
+      "mecanismo": "Ciclovia que parece vazia vira argumento contra novas ciclovias; cheia, a favor.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad"
+    },
+    {
+      "id": "seta_10",
+      "de": "var_9",
+      "para": "var_1",
+      "polaridade": "+",
+      "atraso": true,
+      "mecanismo": "Apoio público sustenta a decisão política de investir.",
+      "classificacao": "suposicao",
+      "status": "aceita",
+      "autor": "mem_squad",
+      "atraso_descricao": "Ciclo de orçamento e de eleição"
+    }
+  ],
+  "loops_anotados": [
+    {
+      "setas": [
+        "seta_04",
+        "seta_05",
+        "seta_06",
+        "seta_07"
+      ],
+      "nome": "R1 · Segurança em números",
+      "historia": "Mais ciclistas deixam motoristas mais atentos, o que reduz acidentes, aumenta a sensação de segurança e traz mais ciclistas."
+    }
+  ],
+  "analise": {},
+  "alavancas": [
+    {
+      "id": "alv_01",
+      "alvo": {
+        "tipo": "variavel",
+        "refs": [
+          "var_1"
+        ]
+      },
+      "nivel_meadows": "parametro",
+      "impacto_esperado": "Mais quilômetros de ciclovia por ano.",
+      "teste_sanidade": "Se aumentarmos o investimento, a rede cresce; o número de ciclistas cresce junto?",
+      "autor": "mem_squad"
+    }
+  ]
+}

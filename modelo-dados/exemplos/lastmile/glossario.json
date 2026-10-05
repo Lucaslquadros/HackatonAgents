@@ -1,0 +1,6 @@
+{
+  "termos": [
+    { "id": "glo_lastmile", "termo": "Last-mile", "definicao": "Última etapa da entrega, do ponto de coleta até o cliente final.", "autor": "mem_ana" },
+    { "id": "glo_praca", "termo": "Praça", "definicao": "Cidade de operação; no case, cada praça define as próprias metas de entrega.", "fonte": "Sinal 9 do case", "autor": "mem_ana" }
+  ]
+}

@@ -1,0 +1,623 @@
+{
+  "versao": 1,
+  "id": "ped_01",
+  "criado_em": "2026-10-04T10:40:00-03:00",
+  "gatilho": "pos_ritual",
+  "cynefin": "complexo",
+  "mapa": {
+    "versao": 1,
+    "recorte": "rec_lastmile",
+    "contexto": {
+      "tema": "Atrasos numa startup de entregas last-mile (moto e bike)",
+      "descricao": "14 sinais do case da aula: contratos com prazos não validados pela operação, 210 rotas 'prioritárias', entregadores realocados para urgências, cancelamentos por atraso +42% no trimestre, tempo médio de entrega subindo há seis meses.",
+      "pergunta_problema": "Por que o tempo médio de entrega aumentou continuamente nos últimos seis meses, apesar de a operação priorizar rotas e realocar entregadores para as urgências?",
+      "horizonte_tempo": "Últimos 6 meses",
+      "fronteira": "Entre a promessa comercial de prazo e a capacidade de entrega de cada praça."
+    },
+    "atores": [
+      {
+        "id": "ator_comercial",
+        "nome": "Comercial",
+        "papeis": [
+          "decide"
+        ]
+      },
+      {
+        "id": "ator_operacao",
+        "nome": "Operação",
+        "papeis": [
+          "opera"
+        ]
+      },
+      {
+        "id": "ator_entregadores",
+        "nome": "Entregadores",
+        "papeis": [
+          "sofre",
+          "opera"
+        ]
+      },
+      {
+        "id": "ator_lojistas",
+        "nome": "Lojistas parceiros",
+        "papeis": [
+          "sofre",
+          "paga"
+        ]
+      },
+      {
+        "id": "ator_diretoria",
+        "nome": "Diretoria",
+        "papeis": [
+          "decide"
+        ]
+      }
+    ],
+    "variaveis": [
+      {
+        "id": "var_contratos",
+        "nome": "Novos contratos com lojistas",
+        "tipo": "neutra",
+        "atores": [
+          "ator_comercial"
+        ],
+        "status": "aceita",
+        "autor": "mem_ana",
+        "posicao": {
+          "x": 80,
+          "y": 60
+        }
+      },
+      {
+        "id": "var_demanda",
+        "nome": "Volume de pedidos",
+        "tipo": "neutra",
+        "atores": [
+          "ator_lojistas"
+        ],
+        "status": "aceita",
+        "autor": "mem_ana",
+        "posicao": {
+          "x": 300,
+          "y": 60
+        }
+      },
+      {
+        "id": "var_carga",
+        "nome": "Carga por entregador",
+        "tipo": "problema",
+        "atores": [
+          "ator_entregadores"
+        ],
+        "status": "aceita",
+        "autor": "mem_carla",
+        "posicao": {
+          "x": 520,
+          "y": 60
+        }
+      },
+      {
+        "id": "var_tempo",
+        "nome": "Tempo médio de entrega",
+        "tipo": "problema",
+        "atores": [
+          "ator_lojistas",
+          "ator_operacao"
+        ],
+        "status": "aceita",
+        "autor": "mem_carla",
+        "posicao": {
+          "x": 520,
+          "y": 280
+        }
+      },
+      {
+        "id": "var_prioritarias",
+        "nome": "Rotas classificadas como prioritárias",
+        "tipo": "problema",
+        "atores": [
+          "ator_operacao"
+        ],
+        "status": "aceita",
+        "autor": "mem_bruno",
+        "posicao": {
+          "x": 760,
+          "y": 200
+        }
+      },
+      {
+        "id": "var_realocacoes",
+        "nome": "Realocações de entregadores",
+        "tipo": "problema",
+        "atores": [
+          "ator_operacao",
+          "ator_entregadores"
+        ],
+        "status": "aceita",
+        "autor": "mem_bruno",
+        "posicao": {
+          "x": 760,
+          "y": 380
+        }
+      },
+      {
+        "id": "var_pressao",
+        "nome": "Pressão sobre a operação",
+        "tipo": "neutra",
+        "atores": [
+          "ator_diretoria",
+          "ator_operacao"
+        ],
+        "status": "aceita",
+        "autor": "mem_ana",
+        "posicao": {
+          "x": 300,
+          "y": 420
+        }
+      },
+      {
+        "id": "var_velocidade",
+        "nome": "Velocidade exigida dos entregadores",
+        "tipo": "neutra",
+        "atores": [
+          "ator_entregadores"
+        ],
+        "status": "aceita",
+        "autor": "mem_ana",
+        "posicao": {
+          "x": 520,
+          "y": 500
+        }
+      },
+      {
+        "id": "var_cancelamentos",
+        "nome": "Cancelamentos por atraso",
+        "tipo": "problema",
+        "atores": [
+          "ator_lojistas"
+        ],
+        "status": "aceita",
+        "autor": "mem_carla",
+        "posicao": {
+          "x": 300,
+          "y": 280
+        }
+      },
+      {
+        "id": "var_satisfacao",
+        "nome": "Satisfação dos lojistas",
+        "tipo": "resultado",
+        "atores": [
+          "ator_lojistas"
+        ],
+        "status": "aceita",
+        "autor": "mem_carla",
+        "posicao": {
+          "x": 80,
+          "y": 280
+        }
+      }
+    ],
+    "setas": [
+      {
+        "id": "seta_01",
+        "de": "var_contratos",
+        "para": "var_demanda",
+        "polaridade": "+",
+        "atraso": false,
+        "mecanismo": "Cada contrato novo traz pedidos de mais um lojista.",
+        "classificacao": "certeza",
+        "fonte": "Sinais 1 e 8 do case",
+        "status": "aceita",
+        "autor": "mem_ana"
+      },
+      {
+        "id": "seta_02",
+        "de": "var_demanda",
+        "para": "var_carga",
+        "polaridade": "+",
+        "atraso": false,
+        "mecanismo": "Contratos são aceitos sem capacidade de entregadores na região, então os pedidos se dividem entre as mesmas pessoas.",
+        "classificacao": "certeza",
+        "fonte": "Sinal 8 do case",
+        "status": "aceita",
+        "autor": "mem_carla"
+      },
+      {
+        "id": "seta_03",
+        "de": "var_carga",
+        "para": "var_tempo",
+        "polaridade": "+",
+        "atraso": true,
+        "atraso_descricao": "Semanas: a fila acumula antes de aparecer na média",
+        "mecanismo": "Mais pedidos por entregador formam fila de espera por coleta.",
+        "classificacao": "suposicao",
+        "csd_item": "csd_03",
+        "status": "aceita",
+        "autor": "mem_carla"
+      },
+      {
+        "id": "seta_04",
+        "de": "var_tempo",
+        "para": "var_prioritarias",
+        "polaridade": "+",
+        "atraso": false,
+        "mecanismo": "Pedidos atrasados viram urgência e suas rotas são marcadas como prioritárias.",
+        "classificacao": "suposicao",
+        "status": "aceita",
+        "autor": "mem_bruno"
+      },
+      {
+        "id": "seta_05",
+        "de": "var_prioritarias",
+        "para": "var_realocacoes",
+        "polaridade": "+",
+        "atraso": false,
+        "mecanismo": "Para atender rotas prioritárias, a operação tira entregadores das rotas planejadas.",
+        "classificacao": "certeza",
+        "fonte": "Sinais 2 e 3 do case",
+        "status": "aceita",
+        "autor": "mem_bruno"
+      },
+      {
+        "id": "seta_06",
+        "de": "var_realocacoes",
+        "para": "var_tempo",
+        "polaridade": "+",
+        "atraso": false,
+        "mecanismo": "Cada realocação desmonta uma rota planejada e atrasa as entregas que ficaram nela.",
+        "classificacao": "suposicao",
+        "csd_item": "csd_02",
+        "status": "aceita",
+        "autor": "mem_bruno"
+      },
+      {
+        "id": "seta_07",
+        "de": "var_tempo",
+        "para": "var_pressao",
+        "polaridade": "+",
+        "atraso": false,
+        "mecanismo": "Atrasos geram cobrança da diretoria e do comercial sobre a operação.",
+        "classificacao": "certeza",
+        "fonte": "Sinal 11 do case",
+        "status": "aceita",
+        "autor": "mem_ana"
+      },
+      {
+        "id": "seta_08",
+        "de": "var_pressao",
+        "para": "var_velocidade",
+        "polaridade": "+",
+        "atraso": false,
+        "mecanismo": "A resposta da gestão é pedir que os entregadores sejam mais rápidos.",
+        "classificacao": "certeza",
+        "fonte": "Sinal 14 do case",
+        "status": "aceita",
+        "autor": "mem_ana"
+      },
+      {
+        "id": "seta_09",
+        "de": "var_velocidade",
+        "para": "var_tempo",
+        "polaridade": "-",
+        "atraso": false,
+        "mecanismo": "Se os entregadores andarem mais rápido, cada entrega leva menos tempo (é a crença dos gestores).",
+        "classificacao": "suposicao",
+        "csd_item": "csd_04",
+        "status": "aceita",
+        "autor": "mem_ana"
+      },
+      {
+        "id": "seta_10",
+        "de": "var_tempo",
+        "para": "var_cancelamentos",
+        "polaridade": "+",
+        "atraso": true,
+        "atraso_descricao": "O cliente final cancela depois de esperar",
+        "mecanismo": "Pedidos que passam do prazo são cancelados.",
+        "classificacao": "certeza",
+        "fonte": "Sinais 6 e 13 do case",
+        "csd_item": "csd_01",
+        "status": "aceita",
+        "autor": "mem_carla"
+      },
+      {
+        "id": "seta_11",
+        "de": "var_cancelamentos",
+        "para": "var_satisfacao",
+        "polaridade": "-",
+        "atraso": false,
+        "mecanismo": "Cancelamentos fazem o lojista perder vendas e reclamar.",
+        "classificacao": "certeza",
+        "fonte": "Sinal 4 do case",
+        "status": "aceita",
+        "autor": "mem_carla"
+      },
+      {
+        "id": "seta_12",
+        "de": "var_satisfacao",
+        "para": "var_contratos",
+        "polaridade": "+",
+        "atraso": true,
+        "atraso_descricao": "Meses: efeito em renovações e indicações",
+        "mecanismo": "Lojistas satisfeitos renovam e indicam a plataforma para outros.",
+        "classificacao": "suposicao",
+        "status": "aceita",
+        "autor": "mem_ana"
+      }
+    ],
+    "loops_anotados": [
+      {
+        "setas": [
+          "seta_04",
+          "seta_05",
+          "seta_06"
+        ],
+        "nome": "R1 · Espiral da urgência",
+        "historia": "Atrasar gera urgências; urgências tiram entregadores das rotas planejadas; isso gera mais atraso."
+      },
+      {
+        "setas": [
+          "seta_07",
+          "seta_08",
+          "seta_09"
+        ],
+        "nome": "B1 · Correr mais",
+        "historia": "A gestão reage ao atraso pedindo mais velocidade.",
+        "meta": "Prazo prometido pelo comercial",
+        "lacuna": "Tempo médio atual menos o prazo prometido"
+      },
+      {
+        "setas": [
+          "seta_01",
+          "seta_02",
+          "seta_03",
+          "seta_10",
+          "seta_11",
+          "seta_12"
+        ],
+        "nome": "B2 · Limite do crescimento",
+        "historia": "Crescer sem capacidade aumenta atrasos e cancelamentos, que derrubam a satisfação e freiam novos contratos.",
+        "meta": "Capacidade de entrega da praça",
+        "lacuna": "Pedidos aceitos acima da capacidade"
+      }
+    ],
+    "analise": {
+      "loop_principal": [
+        "seta_04",
+        "seta_05",
+        "seta_06"
+      ],
+      "cynefin": {
+        "dominio": "complexo",
+        "justificativa": "O comportamento depende de decisões de comercial, operação e entregadores que reagem umas às outras; a causa só fica clara olhando o padrão dos últimos meses."
+      },
+      "delay_identificado": "Entre aceitar contratos acima da capacidade e o aumento do tempo médio passam semanas, o que esconde a relação.",
+      "variavel_ignorada": "Indicadores de cada área: a diretoria mede entregas por dia e o comercial é reconhecido por número de lojistas (sinais 5 e 10).",
+      "arquetipo": "limites_ao_crescimento",
+      "comportamento_no_tempo": {
+        "variavel": "var_tempo",
+        "descricao": "Sobe devagar no início e acelera à medida que R1 passa a dominar."
+      }
+    },
+    "alavancas": [
+      {
+        "id": "alv_01",
+        "alvo": {
+          "tipo": "seta",
+          "refs": [
+            "seta_01",
+            "seta_02"
+          ]
+        },
+        "nivel_meadows": "regra",
+        "impacto_esperado": "Desacelera B2 antes de ele ativar R1: a demanda deixa de crescer acima da capacidade.",
+        "teste_sanidade": "Se aumentarmos a exigência de capacidade disponível antes de aceitar contratos, o tempo médio melhora (menos carga); o volume de contratos cai no curto prazo.",
+        "suposicoes": [
+          "csd_03"
+        ],
+        "autor": "mem_ana"
+      },
+      {
+        "id": "alv_02",
+        "alvo": {
+          "tipo": "loop",
+          "refs": [
+            "seta_04",
+            "seta_05",
+            "seta_06"
+          ]
+        },
+        "nivel_meadows": "meta",
+        "impacto_esperado": "Se a meta da operação deixar de ser cumprir urgências e passar a ser entregas no prazo, R1 perde força.",
+        "teste_sanidade": "Se aumentarmos o número de rotas prioritárias, o sistema piora: a espiral acelera.",
+        "suposicoes": [
+          "csd_02"
+        ],
+        "autor": "mem_carla"
+      }
+    ]
+  },
+  "validacao": {
+    "loops": [
+      {
+        "setas": [
+          "seta_04",
+          "seta_05",
+          "seta_06"
+        ],
+        "negativas": 0,
+        "tipo": "R",
+        "tem_atraso": false
+      },
+      {
+        "setas": [
+          "seta_07",
+          "seta_08",
+          "seta_09"
+        ],
+        "negativas": 1,
+        "tipo": "B",
+        "tem_atraso": false
+      },
+      {
+        "setas": [
+          "seta_01",
+          "seta_02",
+          "seta_03",
+          "seta_10",
+          "seta_11",
+          "seta_12"
+        ],
+        "negativas": 1,
+        "tipo": "B",
+        "tem_atraso": true
+      }
+    ],
+    "problemas": []
+  },
+  "csd": {
+    "itens": [
+      {
+        "id": "csd_01",
+        "tipo": "certeza",
+        "texto": "Cancelamentos de pedidos por atraso cresceram 42% no trimestre.",
+        "autor": "mem_carla",
+        "criado_em": "2026-10-04T10:05:00-03:00",
+        "status": "confirmado",
+        "origem": {
+          "etapa": "mapa_sistemico",
+          "ref": "seta_10"
+        },
+        "evidencias": [
+          {
+            "tipo": "dado",
+            "descricao": "Sinal 6 do case.",
+            "referencia": "Case last-mile, quadro Miro da aula de DT, p. 4",
+            "contem_dado_pessoal": false
+          }
+        ]
+      },
+      {
+        "id": "csd_02",
+        "tipo": "suposicao",
+        "texto": "Realocar entregadores para urgências aumenta o tempo médio das entregas que ficaram nas rotas planejadas.",
+        "autor": "agente",
+        "criado_em": "2026-10-04T10:12:00-03:00",
+        "status": "confirmado",
+        "origem": {
+          "etapa": "mapa_sistemico",
+          "ref": "seta_06"
+        },
+        "evidencias": [],
+        "importancia": "alta",
+        "pergunta_pesquisa": "Nas rotas que perderam entregadores por realocação, o tempo de entrega sobe em relação às rotas que não perderam?",
+        "hipotese": {
+          "se": "limitarmos as realocações a casos de risco de cancelamento",
+          "esperamos": "que o tempo médio de entrega caia nas rotas planejadas",
+          "porque": "as rotas deixam de ser desmontadas para atender urgências",
+          "rival": "O tempo sobe por falta de entregadores, não por realocação; limitar realocações não mudaria a média.",
+          "criterio_descarte": "Se em 2 semanas o tempo médio nas rotas protegidas não cair pelo menos 10%, descartamos.",
+          "metricas": {
+            "resultado": "Tempo médio de entrega",
+            "antecedente": "Número de realocações por dia",
+            "saude": "Cancelamentos por atraso e satisfação dos entregadores"
+          },
+          "experimento": {
+            "guardrail": "Uma praça, duas semanas, apenas rotas sem cliente estratégico.",
+            "amplificacao": "Tempo médio cai 10% ou mais sem subir cancelamentos: estender para mais duas praças.",
+            "interrupcao": "Cancelamentos sobem mais de 5% na praça-piloto: parar."
+          }
+        }
+      },
+      {
+        "id": "csd_03",
+        "tipo": "duvida",
+        "texto": "Qual é a capacidade real de entregas por entregador em cada praça?",
+        "autor": "mem_bruno",
+        "criado_em": "2026-10-04T10:15:00-03:00",
+        "status": "proposto",
+        "origem": {
+          "etapa": "mapa_sistemico",
+          "ref": "seta_03"
+        },
+        "evidencias": [],
+        "importancia": "alta",
+        "tarefa_discovery": "Levantar entregas por entregador por turno nas três maiores praças e comparar com os pedidos aceitos."
+      },
+      {
+        "id": "csd_04",
+        "tipo": "suposicao",
+        "texto": "O atraso acontece porque os entregadores precisam ser mais rápidos (crença dos gestores).",
+        "autor": "mem_ana",
+        "criado_em": "2026-10-04T10:20:00-03:00",
+        "status": "confirmado",
+        "origem": {
+          "etapa": "mapa_sistemico",
+          "ref": "seta_09"
+        },
+        "evidencias": [],
+        "importancia": "media",
+        "pergunta_pesquisa": "O tempo de deslocamento por entrega mudou nos últimos seis meses, ou o que cresceu foi o tempo de espera antes da coleta?"
+      }
+    ]
+  },
+  "ritual": {
+    "id": "rit_01",
+    "recorte": "rec_lastmile",
+    "pergunta_generativa": "O que neste mapa te surpreendeu?",
+    "duracao_min": 5,
+    "aberto_em": "2026-10-04T10:30:00-03:00",
+    "encerrado_em": "2026-10-04T10:36:00-03:00",
+    "reflexoes": [
+      {
+        "id": "ref_01",
+        "autor": "mem_ana",
+        "tipo": "percepcao",
+        "texto": "A urgência que a operação cria para resolver o atraso é o que mais gera atraso.",
+        "criado_em": "2026-10-04T10:32:00-03:00"
+      },
+      {
+        "id": "ref_02",
+        "autor": "mem_bruno",
+        "tipo": "pergunta",
+        "texto": "Quem decide que uma rota é prioritária, e com que critério?",
+        "criado_em": "2026-10-04T10:33:00-03:00"
+      },
+      {
+        "id": "ref_03",
+        "autor": "mem_carla",
+        "tipo": "percepcao",
+        "texto": "Cada praça define a própria meta; talvez o problema seja diferente em cada cidade.",
+        "criado_em": "2026-10-04T10:34:00-03:00"
+      }
+    ],
+    "integracao": {
+      "cobertura": [
+        {
+          "reflexao": "ref_01",
+          "presente_no_mapa": true,
+          "elementos": [
+            "seta_04",
+            "seta_05",
+            "seta_06"
+          ]
+        },
+        {
+          "reflexao": "ref_02",
+          "presente_no_mapa": true,
+          "elementos": [
+            "var_prioritarias"
+          ]
+        },
+        {
+          "reflexao": "ref_03",
+          "presente_no_mapa": false
+        }
+      ],
+      "divergencias": []
+    }
+  },
+  "visoes_abertas": [],
+  "limite_visoes": 3
+}

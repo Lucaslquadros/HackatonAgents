@@ -1,0 +1,9 @@
+{
+  "name": "hackos-quadro",
+  "private": true,
+  "type": "module",
+  "description": "Quadro e validador do Agente de Visão Sistêmica (sem dependências).",
+  "scripts": {
+    "test": "node --test \"testes/*.test.js\""
+  }
+}
