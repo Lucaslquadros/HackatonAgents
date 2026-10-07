@@ -6,12 +6,12 @@
 >
 > Status: `todo` → `em andamento` → `checkpoint` → `feito`
 
-**Escopo desta Construction:** só o **Cadastro do Time** (Passo 0,
-Inception decisões 1-2). Porta/pacto/sala e o resto da experiência do
-Orquestrador **não entram aqui** — continuam esperando o gate do
-Objetivo 1 (Sistêmico fechar os checkpoints pendentes). Decidido com o
-Lucas em 2026-10-05: solução definitiva, não uma tela emprestada por
-outro agente.
+**Escopo desta Construction:** o **Passo 0** inteiro (Cadastro do Time,
+Inception decisões 1-2; onboarding de edital + referências de site,
+decisão 5). Porta/pacto/sala e o resto da experiência do Orquestrador
+**não entram aqui** — continuam esperando o gate do Objetivo 1 (Sistêmico
+fechar os checkpoints pendentes). Decidido com o Lucas em 2026-10-05:
+solução definitiva, não uma tela emprestada por outro agente.
 
 **Onde o dado mora:** `Hack_OS/squad.json`, na raiz do projeto — não
 dentro de uma pasta de agente específico, porque o squad é um só para a
@@ -216,3 +216,52 @@ recorte/categoria. Formato: `$defs/squad` de
   para o Agente de Panorama via `membro.areas_afinidade`), como rodar os
   testes, checklist de saúde (5 itens, incluindo a guarda contra toque
   duplo), e changelog dos Bolts 1, 2, 2.1 e da correção pós-teste real.
+
+## Bolt 4 — Schema do onboarding: edital + referências de site
+
+- **Objetivo:** estender `$defs/squad` (não `$defs/membro` — isso é do
+  squad inteiro, não por integrante) com `edital` (objeto opcional:
+  `caminho` ou `url`, ao menos um dos dois) e `referencias_site` (lista
+  opcional de `{url, titulo opcional, resumo opcional}` — `resumo` só
+  existe depois que o motor do Bolt 6 roda).
+- **Entregável:** `modelo-dados/hackos.schema.json` atualizado; exemplo
+  válido com os dois campos preenchidos (usar o Campus Mobile real:
+  `editais-referencia/07-campus-mobile-15-edicao-2026.md` como `caminho`,
+  mais a URL do regulamento como alternativa); teste de schema cobrindo
+  caso válido e inválido (ex.: `edital` sem `caminho` nem `url`).
+- **Checkpoint:** `python modelo-dados/testes/validar_exemplos.py` passa,
+  Lucas revisa o formato.
+- **Status:** todo
+
+## Bolt 5 — Tela: anexar edital + referências de site
+
+- **Objetivo:** na mesma tela do Cadastro do Time (Inception, decisão
+  5.1), novos campos: edital (caminho **ou** link — um campo de texto só,
+  o backend decide se é caminho local ou URL pelo formato) e lista
+  dinâmica de referências de site (adicionar/remover link + título
+  opcional), mesmo padrão de lista dinâmica já usado pra integrantes e
+  áreas de afinidade.
+- **Entregável:** `agente-orquestrador/cadastro/estado.js` (campos novos
+  + validação leve) e `app.js`/`index.html`/`estilo.css`.
+- **Checkpoint:** Lucas anexa o edital real do Campus Mobile (link ou
+  caminho) e pelo menos 1 referência de site pela tela, salva, recarrega
+  e vê os dados de volta.
+- **Status:** todo
+
+## Bolt 6 — Motor: `/enquadrar` lê do Cadastro do Time; resumo de referências
+
+- **Objetivo:** (a) `agente-enquadrador/.claude/commands/enquadrar.md`
+  ganha a opção de rodar **sem argumento**, lendo `edital.caminho`/`url`
+  de `Hack_OS/squad.json` quando `$ARGUMENTS` vier vazio — elimina
+  redigitar o caminho toda vez; (b) cada referência de site ganha um botão
+  "Pedir resumo" que grava um pedido (mesmo padrão pedido/resposta dos
+  outros motores — reaproveitar `agente-enquadrador`, que já tem
+  `WebFetch`, não criar um motor novo), mostra o comando a rodar, e o
+  resumo volta pro Cadastro depois.
+- **Entregável:** ajuste no comando do Enquadrador; rota de
+  pedido/resposta no `agente-orquestrador/servidor.py` (mesmo padrão de
+  `agente-sistemico/servidor.py`); UI mostrando resumo quando chegar.
+- **Checkpoint:** teste de ponta a ponta real — `/enquadrar` sem
+  argumento lê o Campus Mobile do Cadastro e funciona; pedir resumo de 1
+  referência de site real traz um resumo de verdade.
+- **Status:** todo

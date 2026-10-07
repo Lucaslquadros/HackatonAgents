@@ -454,3 +454,9 @@ button.aceitar { border-color: var(--reforco); color: var(--reforco); font-weigh
 .panorama-sensibilidade { margin-top: 10px; border: 1px solid var(--aviso); background: var(--aviso-fundo); color: var(--aviso); border-radius: 8px; padding: 8px 12px; }
 .panorama-sensibilidade ul { margin: 4px 0 0; padding-left: 18px; }
 .panorama-sensibilidade-ok { margin-top: 10px; }
+.panorama-motor { margin: 10px 0; border-top: 1px dashed var(--borda); padding-top: 10px; }
+.panorama-motor-aguardando code { background: var(--fundo); padding: 1px 4px; border-radius: 4px; }
+.panorama-motor-erro { color: var(--perigo); }
+.panorama-sugestoes { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 8px; }
+.panorama-sugestao { border: 1px dashed var(--destaque); border-radius: 8px; padding: 8px 10px; }
+.panorama-lacunas { margin-top: 8px; color: var(--texto-suave); font-size: 13px; }

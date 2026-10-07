@@ -413,6 +413,51 @@ export function ehCriterioDeTime(criterio) {
   return normalizarTexto(criterio.nome).includes("time");
 }
 
+// ---------- motor v1 (Bolt 6): agente propõe fatos, squad aceita/recusa
+// (mesmo princípio das setas fantasma do Sistêmico — nada entra sem
+// aceite explícito). Pedido/resposta ficam fora do panorama.json, em
+// agente-sistemico/panorama-sessoes/<cenario>/ — ver servidor.py. ----------
+
+export function montarPedidoPanorama(pan, cenarioId) {
+  const cenario = pan.cenarios.find((c) => c.id === cenarioId);
+  if (!cenario) throw new Error(`cenário inexistente: ${cenarioId}`);
+  const pedido = {
+    versao: 1,
+    id: `ped_${Date.now()}`,
+    cenario: { nome: cenario.nome },
+    fatos_existentes: fatosDoCenario(pan, cenarioId).map((f) => ({ texto: f.texto, classificacao_csd: f.classificacao_csd })),
+    criado_em: new Date().toISOString(),
+  };
+  if ((cenario.descricao || "").trim()) pedido.cenario.descricao = cenario.descricao;
+  return pedido;
+}
+
+// O motor busca na web (WebFetch) e às vezes devolve HTML não decodificado
+// dentro do texto (ex.: "Green Tech &amp;amp; Agtech") — achado no teste de
+// ponta a ponta real do Bolt 6. Decodifica as entidades comuns ao aceitar,
+// uma vez, em vez de o squad ver "&amp;" na tela.
+const ENTIDADES_HTML = { amp: "&", lt: "<", gt: ">", quot: '"', "#39": "'", apos: "'", nbsp: " " };
+function decodificarEntidadesHtml(texto) {
+  if (typeof texto !== "string") return texto;
+  return texto.replace(/&(amp|lt|gt|quot|#39|apos|nbsp);/g, (_, nome) => ENTIDADES_HTML[nome]);
+}
+
+// Transforma um `fato_sugerido` (resposta do motor, ainda não aceito) num
+// fato de verdade do cenário — mesma função de criação usada quando o
+// squad registra um fato à mão, só que pré-preenchida e com autor "agente".
+export function aceitarFatoSugerido(pan, cenarioId, sugestao) {
+  const fato = adicionarFato(pan, cenarioId, { autor: "agente" });
+  const evidencia = sugestao.evidencia ? { ...sugestao.evidencia } : sugestao.evidencia;
+  if (evidencia?.descricao) evidencia.descricao = decodificarEntidadesHtml(decodificarEntidadesHtml(evidencia.descricao));
+  if (evidencia?.referencia) evidencia.referencia = decodificarEntidadesHtml(decodificarEntidadesHtml(evidencia.referencia));
+  atualizarFato(pan, fato.id, {
+    texto: decodificarEntidadesHtml(decodificarEntidadesHtml(sugestao.texto)),
+    classificacao_csd: sugestao.classificacao_csd_sugerida,
+    evidencia,
+  });
+  return fato;
+}
+
 // ---------- finalista + handoff pro Sistêmico (Bolt 5 — Inception,
 // "Contrato de saída": o problema escolhido sai pronto para popular
 // mapa.contexto + atores[] de uma sessão nova do Sistêmico, pulando a 1ª
@@ -776,7 +821,51 @@ function htmlProblemasSecao(pan, cenario) {
     </section>`;
 }
 
-function htmlCenarioAberto(pan, cenario, rascunhoCenario) {
+// Bolt 6: estado do motor para o cenário aberto — o quadro mantém isso em
+// memória (não faz parte do panorama.json, é efêmero por sessão de tela).
+// `estado`: "sem_servidor" | "aguardando" | "pronto" | "erro" | undefined
+// (undefined = ainda não pedido). `sugestoes`/`lacunas` vêm de resposta.json.
+function htmlMotorPanorama(cenarioId, motor = {}) {
+  if (motor.estado === "aguardando") {
+    return `
+      <div class="panorama-motor panorama-motor-aguardando" role="status">
+        <p>Rodando <code>${esc(motor.comando || `/panorama ${cenarioId}`)}</code> numa sessão do Claude Code em <code>agente-panorama/</code>… o quadro consulta sozinho a cada 3s.</p>
+        <button type="button" data-panorama-acao="copiar-comando-motor" data-cenario="${esc(cenarioId)}">Copiar comando</button>
+        <button type="button" class="link" data-panorama-acao="cancelar-pedido-motor" data-cenario="${esc(cenarioId)}">Cancelar espera</button>
+      </div>`;
+  }
+  if (motor.estado === "erro") {
+    return `<p class="panorama-motor panorama-motor-erro" role="alert">Não foi possível pedir fatos ao agente: ${esc(motor.erro || "erro desconhecido")}.</p>`;
+  }
+  const sugestoes = motor.sugestoes || [];
+  const lacunas = motor.lacunas || [];
+  return `
+    <div class="panorama-motor">
+      <button type="button" data-panorama-acao="pedir-fatos-agente" data-cenario="${esc(cenarioId)}">Pedir fatos ao agente</button>
+      ${sugestoes.length ? `
+        <ul class="panorama-sugestoes">
+          ${sugestoes.map((s, i) => htmlFatoSugerido(cenarioId, s, i)).join("")}
+        </ul>` : ""}
+      ${lacunas.length ? `
+        <div class="panorama-lacunas">
+          <strong>O agente não achou informação suficiente sobre:</strong>
+          <ul>${lacunas.map((l) => `<li>${esc(l)}</li>`).join("")}</ul>
+        </div>` : ""}
+    </div>`;
+}
+
+function htmlFatoSugerido(cenarioId, sugestao, indice) {
+  const ev = sugestao.evidencia || {};
+  return `
+    <li class="panorama-sugestao" data-sugestao-indice="${indice}">
+      <p>${esc(sugestao.texto)}</p>
+      <p class="dica">${esc(ROTULO_TIPO_EVIDENCIA[ev.tipo] || ev.tipo)} — ${esc(ev.descricao || "")}${ev.referencia ? ` (${esc(ev.referencia)})` : ""}${ev.data ? `, ${esc(ev.data)}` : ""} · CSD sugerida: ${esc(EXPLICACAO_CSD[sugestao.classificacao_csd_sugerida]?.rotulo || sugestao.classificacao_csd_sugerida)}</p>
+      <button type="button" class="primario" data-panorama-acao="aceitar-fato-sugerido" data-cenario="${esc(cenarioId)}" data-sugestao="${indice}">Aceitar como fato</button>
+      <button type="button" class="link perigo" data-panorama-acao="recusar-fato-sugerido" data-cenario="${esc(cenarioId)}" data-sugestao="${indice}">Recusar</button>
+    </li>`;
+}
+
+function htmlCenarioAberto(pan, cenario, rascunhoCenario, motor) {
   if (!cenario) return "";
   const fatos = fatosDoCenario(pan, cenario.id);
   return `
@@ -793,6 +882,7 @@ function htmlCenarioAberto(pan, cenario, rascunhoCenario) {
       <p class="panorama-contagem">${fatos.length} fato(s) neste cenário.</p>
       <ul class="panorama-fatos">${fatos.map(htmlFato).join("")}</ul>
       <button type="button" class="primario" data-panorama-acao="adicionar-fato" data-cenario="${esc(cenario.id)}">+ Fato</button>
+      ${htmlMotorPanorama(cenario.id, motor)}
       ${htmlClustersSecao(pan, cenario)}
       ${htmlProblemasSecao(pan, cenario)}
     </section>`;
@@ -941,7 +1031,7 @@ function htmlAvisos(pan) {
     </div>`;
 }
 
-export function htmlPanorama(pan, { cenarioAberto, rascunhoCenario = {}, squad = null } = {}) {
+export function htmlPanorama(pan, { cenarioAberto, rascunhoCenario = {}, squad = null, motorPorCenario = {} } = {}) {
   const aberto = pan.cenarios.find((c) => c.id === cenarioAberto) || pan.cenarios[0] || null;
   return `
     <div class="panorama-tela">
@@ -956,7 +1046,7 @@ export function htmlPanorama(pan, { cenarioAberto, rascunhoCenario = {}, squad =
       ${htmlListaCenarios(pan.cenarios, aberto?.id)}
       ${htmlFormCenario(rascunhoCenario)}
       ${htmlAvisos(pan)}
-      ${htmlCenarioAberto(pan, aberto, rascunhoCenario)}
+      ${htmlCenarioAberto(pan, aberto, rascunhoCenario, aberto ? motorPorCenario[aberto.id] : undefined)}
       ${pan.problemas_candidatos.length ? htmlRanqueamentoSecao(pan, squad) : ""}
     </div>`;
 }

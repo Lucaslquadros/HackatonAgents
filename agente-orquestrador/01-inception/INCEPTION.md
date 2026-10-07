@@ -83,12 +83,50 @@ individuais apontam pra cá em vez de duplicar. "Pronto" pro **Objetivo 1**
    porque é específico dessa fronteira). Este Inception decide o que
    **atravessa 3+ peças**, ou o que não pertence a nenhum agente
    construído ainda (como o Passo 0).
+5. **Onboarding completo do Passo 0** (Lucas, 2026-10-07): achado em uso
+   real — depois de cadastrar o time (Bolts 1-2.1, em checkpoint), não
+   havia lugar nenhum pra anexar o edital do hackathon nem referências de
+   site (FAQ, vencedores de edições anteriores etc.), nem na Inception do
+   Enquadrador nem em `FLUXO-PEDAGOGICO.md`. `/enquadrar` sempre exigiu um
+   caminho de arquivo passado manualmente, redigitado toda vez. Decisões:
+   1. **Onde:** estende a mesma tela do Cadastro do Time
+      (`agente-orquestrador/cadastro/`) — não um passo separado. Um squad
+      começando o hackathon preenche tudo num lugar só: quem é o time, qual
+      o edital, que referências valem a pena.
+   2. **Como anexar o edital:** os dois formatos — caminho de arquivo local
+      (PDF/MD, como já é hoje) **ou** link direto (URL do regulamento
+      oficial, como fizemos manualmente pro Campus Mobile). Guardado como
+      campo do squad, não mais como argumento digitado a cada vez que
+      `/enquadrar` roda.
+   3. **Referências de site:** uma lista de links (FAQ, página de
+      vencedores de edições anteriores etc.), guardados junto; **o agente
+      lê e resume cada um** — mas seguindo o mesmo padrão arquitetural que
+      todo motor desta plataforma já usa (decisão herdada de
+      `../ROADMAP.md`, "Padrão técnico de implementação": motor roda como
+      sessão do Claude Code, nenhum servidor Python desta plataforma chama
+      API de IA direto). Ou seja: salvar o link é mecânico (sem IA,
+      instantâneo); **resumir** é um motor — a tela mostra o comando a
+      rodar (mesmo padrão `/visao-sistemica <recorte>` e
+      `/panorama <cenario>` já usados), e o resumo de cada referência
+      volta pro Cadastro depois de rodado. Não é fetch síncrono disparado
+      pelo clique de "salvar" no navegador.
+   4. **Reaproveita o Agente Enquadrador** para analisar o edital anexado
+      (seja arquivo ou link — o front-matter dele já tem `WebFetch`) em vez
+      de criar um motor novo só pra isso; o comando `/enquadrar` passa a
+      poder ler o caminho/link direto do Cadastro do Time, sem precisar
+      redigitar.
+   - **Gap relacionado, achado no mesmo momento, mas de outro dono:** o
+     quadro do Sistêmico não tem como listar/abrir sessões existentes por
+     nome (`rec_bicicleta`, `rec_lastmile` etc.) — só um seletor de arquivo
+     do sistema operacional. Isso pertence ao `agente-sistemico/` (é a UI
+     dele), não a este Inception — registrado como bolt novo lá, não aqui
+     (decisão 4, regra de escopo).
 
 ## A jornada completa (referência cross-agent)
 
 | # | Etapa | O que acontece | Quem faz | Status (2026-10-05) |
 |---|---|---|---|---|
-| 0 | Pacto e acordo do squad | Squad firma compromisso com o edital **+ Cadastro do Time** (decisões 1-2) | Este componente | 🟡 só o pacto existe; Cadastro é novo |
+| 0 | Pacto e acordo do squad | Squad firma compromisso com o edital **+ Cadastro do Time + edital anexado + referências de site** (decisões 1-2, 5) | Este componente | 🟡 Cadastro do Time em checkpoint; onboarding do edital/referências novo |
 | 1 | Enquadrar o edital | Critérios, pesos, riscos, entregáveis | Agente Enquadrador | ✅ construído e testado |
 | 2a-2f | Panorama → ranqueamento → finalista | Pesquisa por cenário, CSD, clusters, problemas candidatos, ranqueamento (incl. aderência ao time), escolha | Agente de Panorama | 🟡 Inception pronto |
 | 3 | Entrevista (rodada 2+) | Pula rodada 1 (já veio do Panorama); aprofunda fronteira/sistema | Agente de Visão Sistêmica | ✅ construído |
@@ -109,6 +147,12 @@ agente já depende deles:
 - [ ] Cadastro do Time (decisões 1-2) precisa existir, mesmo que de forma
       mínima, antes do bolt de ranqueamento do Agente de Panorama chegar
       lá — ver risco correspondente.
+- [ ] Onboarding do edital + referências de site (decisão 5): campo de
+      edital (caminho ou link) e lista de referências no Cadastro do Time;
+      `/enquadrar` lê o edital anexado sem precisar de argumento
+      redigitado; cada referência de site tem um jeito de pedir resumo ao
+      agente (mesmo padrão pedido/resposta dos outros motores) e mostrar o
+      resultado de volta na tela.
 - [ ] O resto (porta, pacto com peso emocional, sala revelando agentes,
       orquestrador explicando o fluxo) fica registrado como visão
       (`../VISAO-EXPERIENCIA.md`) até o gate do Objetivo 1 abrir de
@@ -149,3 +193,7 @@ agente já depende deles:
    dinâmico; selar é único ou reafirmável; quem aparece "na sala") seguem
    em aberto até o gate do Objetivo 1 abrir de verdade — não bloqueiam o
    Cadastro do Time.
+4. ~~Onde fica o onboarding de edital/referências? Upload ou link?
+   Resumo automático?~~ — **respondidas em 2026-10-07** (decisão 5):
+   mesma tela do Cadastro, os dois formatos (caminho ou link), resumo via
+   motor (não síncrono). Ver `../02-construction/BOLTS.md` para os bolts.

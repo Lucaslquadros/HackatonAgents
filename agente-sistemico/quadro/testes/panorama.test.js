@@ -16,6 +16,7 @@ import {
   adicionarCriterio, atualizarCriterio, removerCriterio, definirNota, totalPonderado, sensibilidadeRanqueamento,
   apoioAderenciaTime, ehCriterioDeTime, CRITERIOS_SUGERIDOS,
   montarFinalista, recorteDoFinalista, escolherFinalista, pedidoVisaoDoFinalista,
+  montarPedidoPanorama, aceitarFatoSugerido,
 } from "../panorama.js";
 
 const aqui = path.dirname(fileURLToPath(import.meta.url));
@@ -572,6 +573,90 @@ test("sensibilidadeRanqueamento: aponta a troca de líder quando a decisão é f
     assert.ok([p1.id, p2.id].includes(m.novoLiderId));
     assert.notEqual(m.novoLiderId, liderId, "só registra mudança de verdade, nunca o próprio líder repetido");
   }
+});
+
+// Motor v1 (Bolt 6): o agente propõe fatos, squad aceita/recusa — mesmo
+// princípio das setas fantasma do Sistêmico. montarPedidoPanorama monta o
+// que vai pro motor; aceitarFatoSugerido transforma a resposta num fato
+// de verdade só quando o squad decide aceitar.
+test("montarPedidoPanorama exige cenário existente e monta o pedido com os fatos já registrados", () => {
+  const pan = novoPanorama();
+  assert.throws(() => montarPedidoPanorama(pan, "cen_inexistente"), /cenário inexistente/);
+
+  const { pan: pan2, c, f } = cenarioComFato("Conectividade rural instável.");
+  const pedido = montarPedidoPanorama(pan2, c.id);
+  assert.equal(pedido.versao, 1);
+  assert.match(pedido.id, /^ped_/);
+  assert.equal(pedido.cenario.nome, "Green Tech & Agtech");
+  assert.equal(pedido.fatos_existentes.length, 1);
+  assert.equal(pedido.fatos_existentes[0].texto, f.texto);
+  assert.equal(pedido.fatos_existentes[0].classificacao_csd, f.classificacao_csd);
+  assert.ok(!("evidencia" in pedido.fatos_existentes[0]), "pedido não vaza a evidência interna, só texto+classificação");
+});
+
+test("montarPedidoPanorama só inclui descrição do cenário quando ela existe", () => {
+  const pan = novoPanorama();
+  const semDescricao = adicionarCenario(pan, { nome: "A" });
+  assert.ok(!("descricao" in montarPedidoPanorama(pan, semDescricao.id).cenario));
+
+  const comDescricao = adicionarCenario(pan, { nome: "B", descricao: "Zona rural." });
+  assert.equal(montarPedidoPanorama(pan, comDescricao.id).cenario.descricao, "Zona rural.");
+});
+
+test("aceitarFatoSugerido cria um fato de verdade a partir da sugestão, com autor 'agente'", () => {
+  const pan = novoPanorama();
+  const c = adicionarCenario(pan, { nome: "Green Tech & Agtech" });
+  const sugestao = {
+    texto: "Municípios rurais sem 4G estável ainda são maioria em algumas regiões.",
+    classificacao_csd_sugerida: "suposicao",
+    evidencia: { tipo: "estimativa", descricao: "Conta aberta do agente — ver fonte citada no texto.", contem_dado_pessoal: false },
+  };
+  const antes = pan.fatos.length;
+  const fato = aceitarFatoSugerido(pan, c.id, sugestao);
+  assert.equal(pan.fatos.length, antes + 1);
+  assert.equal(fato.cenario, c.id);
+  assert.equal(fato.autor, "agente");
+  assert.equal(fato.texto, sugestao.texto);
+  assert.equal(fato.classificacao_csd, "suposicao");
+  assert.deepEqual(fato.evidencia, sugestao.evidencia);
+});
+
+test("aceitarFatoSugerido: squad pode mudar a classificação depois — não fica travada no que o agente sugeriu", () => {
+  const pan = novoPanorama();
+  const c = adicionarCenario(pan, { nome: "X" });
+  const fato = aceitarFatoSugerido(pan, c.id, {
+    texto: "Fato sugerido.",
+    classificacao_csd_sugerida: "certeza",
+    evidencia: { tipo: "fonte_publica", descricao: "Fonte X", contem_dado_pessoal: false },
+  });
+  atualizarFato(pan, fato.id, { classificacao_csd: "duvida" });
+  assert.equal(fato.classificacao_csd, "duvida");
+});
+
+test("aceitarFatoSugerido decodifica entidades HTML vindas do WebFetch do motor (achado no teste real do Bolt 6)", () => {
+  const pan = novoPanorama();
+  const c = adicionarCenario(pan, { nome: "Green Tech & Agtech" });
+  const fato = aceitarFatoSugerido(pan, c.id, {
+    texto: "Categoria Green Tech &amp;amp; Agtech do edital.",
+    classificacao_csd_sugerida: "certeza",
+    evidencia: {
+      tipo: "fonte_publica",
+      descricao: "Dados &amp;amp; fatos da página oficial.",
+      referencia: "https://exemplo.org/?a=1&amp;b=2",
+      contem_dado_pessoal: false,
+    },
+  });
+  assert.equal(fato.texto, "Categoria Green Tech & Agtech do edital.");
+  assert.equal(fato.evidencia.descricao, "Dados & fatos da página oficial.");
+  assert.equal(fato.evidencia.referencia, "https://exemplo.org/?a=1&b=2");
+});
+
+test("recusar/ignorar uma sugestão não deixa resíduo — não chamar aceitarFatoSugerido simplesmente não cria nada", () => {
+  const pan = novoPanorama();
+  const c = adicionarCenario(pan, { nome: "X" });
+  // uma sugestão recusada pelo squad nunca passa por aceitarFatoSugerido — o estado do
+  // panorama não é afetado por sugestões que não foram aceitas, só pelo que o squad aceitou.
+  assert.deepEqual(fatosDoCenario(pan, c.id), []);
 });
 
 test("apoioAderenciaTime cruza o nome do cenário com areas_afinidade por substring, ignorando maiúsculas/acentos", () => {

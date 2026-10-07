@@ -20,6 +20,13 @@ com o motor do agente, que nesta versão é uma sessão do Claude Code:
                         ainda não existe)
   POST /api/panorama   grava panorama.json
 
+  POST /api/panorama/sessao/<cenario>/pedido     grava o pedido ao motor
+                                                  (Bolt 6), devolve o comando
+  GET  /api/panorama/sessao/<cenario>/pedido     lê o pedido atual
+  GET  /api/panorama/sessao/<cenario>/resposta   fatos sugeridos (202
+                                                  enquanto não corresponde
+                                                  ao pedido atual)
+
   GET  /api/squad      Cadastro do Time (Hack_OS/squad.json, squad vazio
                         se ainda não existe) — só leitura aqui; quem grava
                         é o Cadastro do Time (agente-orquestrador/servidor.py).
@@ -55,7 +62,9 @@ PANORAMA_VAZIO = {
 }
 SQUAD_ARQ = RAIZ / "squad.json"
 SQUAD_VAZIO = {"hackathon": "", "membros": []}
+PANORAMA_SESSOES = AQUI / "panorama-sessoes"
 ROTA = re.compile(r"^/api/sessoes/([a-z]+_[a-z0-9_-]{1,60})/(pedido|resposta|estacionamento|entrevista|csd|ritual)$")
+ROTA_PANORAMA_SESSAO = re.compile(r"^/api/panorama/sessao/([a-z]+_[a-z0-9_-]{1,60})/(pedido|resposta)$")
 ID = re.compile(r"^[a-z]+_[a-z0-9_-]+$")
 LIMITE_CORPO = 2 * 1024 * 1024
 # Documentos do squad que o quadro guarda inteiros: arquivo e lista obrigatória.
@@ -100,6 +109,22 @@ def problemas_do_pedido(pedido):
     return erros
 
 
+def problemas_do_pedido_panorama(pedido):
+    """Checagem mínima na entrada; a validação completa é do schema (Bolt 6)."""
+    if not isinstance(pedido, dict):
+        return ["o pedido precisa ser um objeto JSON"]
+    erros = []
+    if pedido.get("versao") != 1:
+        erros.append("versao precisa ser 1")
+    if not isinstance(pedido.get("id"), str) or not ID.match(pedido["id"]):
+        erros.append("id inválido")
+    if not isinstance(pedido.get("cenario"), dict):
+        erros.append("falta o cenario")
+    if not isinstance(pedido.get("fatos_existentes"), list):
+        erros.append("falta fatos_existentes (pode ser lista vazia)")
+    return erros
+
+
 class Manipulador(SimpleHTTPRequestHandler):
     def end_headers(self):
         # Sem cache: o quadro é editado com frequência durante o hackathon.
@@ -120,6 +145,22 @@ class Manipulador(SimpleHTTPRequestHandler):
             return self.responder_json(HTTPStatus.OK, ler_json(PANORAMA_ARQ) if PANORAMA_ARQ.exists() else PANORAMA_VAZIO)
         if caminho == "/api/squad":
             return self.responder_json(HTTPStatus.OK, ler_json(SQUAD_ARQ) if SQUAD_ARQ.exists() else SQUAD_VAZIO)
+        rota_pan = ROTA_PANORAMA_SESSAO.match(caminho)
+        if rota_pan:
+            cenario, recurso = rota_pan.groups()
+            pasta = PANORAMA_SESSOES / cenario
+            pedido_arq = pasta / "pedido.json"
+            if not pedido_arq.exists():
+                return self.responder_json(HTTPStatus.NOT_FOUND, {"erro": "nenhum pedido para este cenário"})
+            pedido = ler_json(pedido_arq)
+            if recurso == "pedido":
+                return self.responder_json(HTTPStatus.OK, pedido)
+            resposta_arq = pasta / "resposta.json"
+            if resposta_arq.exists():
+                resposta = ler_json(resposta_arq)
+                if resposta.get("pedido") == pedido["id"]:
+                    return self.responder_json(HTTPStatus.OK, resposta)
+            return self.responder_json(HTTPStatus.ACCEPTED, {"aguardando": pedido["id"]})
         rota = ROTA.match(caminho)
         if not rota:
             return super().do_GET()
@@ -156,6 +197,23 @@ class Manipulador(SimpleHTTPRequestHandler):
                 return self.responder_json(HTTPStatus.BAD_REQUEST, {"erro": "panorama precisa ter a lista 'cenarios'"})
             gravar_json(PANORAMA_ARQ, corpo)
             return self.responder_json(HTTPStatus.OK, {"cenarios": len(corpo["cenarios"]), "fatos": len(corpo.get("fatos", []))})
+        rota_pan = ROTA_PANORAMA_SESSAO.match(caminho)
+        if rota_pan:
+            cenario, recurso = rota_pan.groups()
+            if recurso != "pedido":
+                return self.responder_json(HTTPStatus.NOT_FOUND, {"erro": "rota inexistente"})
+            tamanho_p = int(self.headers.get("Content-Length") or 0)
+            if tamanho_p <= 0 or tamanho_p > LIMITE_CORPO:
+                return self.responder_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"erro": "corpo vazio ou grande demais"})
+            try:
+                pedido = json.loads(self.rfile.read(tamanho_p).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                return self.responder_json(HTTPStatus.BAD_REQUEST, {"erro": "JSON inválido"})
+            erros = problemas_do_pedido_panorama(pedido)
+            if erros:
+                return self.responder_json(HTTPStatus.BAD_REQUEST, {"erro": "; ".join(erros)})
+            gravar_json(PANORAMA_SESSOES / cenario / "pedido.json", pedido)
+            return self.responder_json(HTTPStatus.CREATED, {"pedido": pedido["id"], "comando": f"/panorama {cenario}"})
         rota = ROTA.match(caminho)
         if not rota or rota.group(2) == "resposta":
             return self.responder_json(HTTPStatus.NOT_FOUND, {"erro": "rota inexistente"})

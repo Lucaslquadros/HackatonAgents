@@ -361,7 +361,87 @@ candidatos → ranqueamento → handoff), motor do agente só entra no Bolt 6.
 - **Checkpoint:** ciclo completo pedido → resposta com o cenário Green
   Tech & Agtech, testado de verdade (sessão headless, mesmo mecanismo já
   validado nos outros agentes).
-- **Status:** todo
+- **Status:** checkpoint — aguardando revisão do Lucas
+- **Resultado (2026-10-07):**
+  - **Subagente** `.claude/agents/agente-panorama.md` — `tools: Read,
+    Grep, Glob, WebSearch, WebFetch` (sem Write/Edit, garantia mecânica).
+    Regra absoluta em texto: só propõe **fatos**, nunca pergunta-problema,
+    hipótese ou solução — mesma disciplina de citação do Agente
+    Enquadrador ("não resuma de memória, cite a fonte real"), reforçada
+    com exemplos do que não escrever ("hipótese:", "a solução seria",
+    "deveriam").
+  - **Comando** `.claude/commands/panorama.md` — acha o pedido em
+    `agente-sistemico/panorama-sessoes/<cenário>/pedido.json`, invoca o
+    subagente, valida com `modelo-dados/validar_resposta_panorama.py`
+    (1 correção automática se recusado), grava `resposta.json` só se
+    passar.
+  - **Validador** `modelo-dados/validar_resposta_panorama.py` — além do
+    schema (`pedido_panorama`/`resposta_panorama`, novos em
+    `hackos.schema.json`), recusa: fato repetido (por texto) de
+    `fatos_existentes`; id técnico no texto; evidência com descrição
+    vazia; linguagem de solução (reaproveita `LINGUAGEM_DE_SOLUCAO` do
+    validador do Sistêmico); linguagem de pergunta-problema/hipótese
+    (`LINGUAGEM_DE_PROBLEMA_OU_HIPOTESE`, padrão novo: "por que X...
+    apesar de Y", "hipótese:", "deveriam", "o ideal seria" etc.); texto
+    terminando em "?".
+  - **Quadro** (`agente-sistemico/quadro/panorama.js` + `app.js` +
+    `estilo.css`): `montarPedidoPanorama` monta o pedido a partir dos
+    fatos já existentes do cenário (sem vazar a evidência interna, só
+    texto+classificação, pro motor não repetir); `aceitarFatoSugerido`
+    transforma uma sugestão num fato de verdade (autor `"agente"`,
+    squad pode reclassificar depois — nunca fica travado na sugestão).
+    Seção "Pedir fatos ao agente" no cenário aberto: estado
+    aguardando/pronto/erro, sugestões com Aceitar/Recusar por item
+    (mesmo princípio das setas fantasma do Bolt 5 do Sistêmico — nada
+    entra sem aceite explícito), lacunas listadas separadamente.
+  - **Servidor** (`agente-sistemico/servidor.py`): rotas
+    `GET/POST /api/panorama/sessao/<cenario>/pedido` e
+    `GET /api/panorama/sessao/<cenario>/resposta` (202 enquanto não
+    corresponde ao pedido atual — mesmo padrão pedido/resposta do
+    Sistêmico). Pedido/resposta ficam fora do `panorama.json`, em
+    `agente-sistemico/panorama-sessoes/<cenário>/` — efêmero, não é
+    estado permanente do squad.
+  - **Testes:** 5 novos em JavaScript
+    (`agente-sistemico/quadro/testes/panorama.test.js`: pedido montado
+    certo a partir dos fatos existentes, sem vazar evidência; descrição
+    só entra quando existe; aceitar sugestão cria fato com autor
+    "agente"; squad pode reclassificar depois; recusar/ignorar não deixa
+    resíduo). Suíte completa sem regressão: 155/155 JavaScript (150 + 5),
+    46/46 Python do Sistêmico, 8/8 Python do Orquestrador,
+    `validar_exemplos.py` sem mudança de resultado.
+  - **Teste de ponta a ponta REAL** (não simulado): criado um cenário de
+    teste (`cen_teste`, "Green Tech & Agtech") com 1 fato existente, pedido
+    gravado à mão no formato do contrato, comando `/panorama cen_teste`
+    disparado de verdade numa sessão headless do Claude Code
+    (`cd agente-panorama && claude -p "/panorama cen_teste" ...`) com
+    `cwd` em `agente-panorama/`. **Resultado: 5 fatos propostos, todos
+    com fonte pública real e link verificável** (ex.: "As inscrições da
+    15ª edição do Campus Mobile encerram às 23h59 de 18 de outubro de
+    2026..." citando
+    `institutoclaro.org.br/nossas-novidades/campus-mobile-abre-as-inscricoes-para-sua-15a-edicao/`;
+    um fato com números reais de edições anteriores — quase 3 mil
+    projetos inscritos desde 2012, 41,95% de participantes mulheres na
+    14ª edição), **3 lacunas honestas** (não um fato forçado): o PDF do
+    regulamento retornou 404 ao tentar abrir via WebFetch, os pesos dos
+    critérios de avaliação apareceram em buscas mas sem página oficial
+    única confirmada, e não há dado histórico recortado só pra categoria
+    Green Tech & Agtech (só do programa inteiro). Validador aceitou de
+    primeira. Nenhum fato soa como pergunta-problema ou hipótese — a
+    disciplina do prompt se sustentou na prática, não só na promessa.
+    `panorama-sessoes/` de teste apagada depois — não é dado real do
+    squad; `agente-sistemico/panorama.json` nunca foi tocado (segue
+    inexistente, como o Lucas resetou).
+  - **Achado para revisão do Lucas (não corrigido neste bolt, fora de
+    escopo da diretiva):** o texto de 2 dos 5 fatos reais trouxe a
+    entidade HTML `&amp;` (de "Green Tech &amp; Agtech") em vez do
+    caractere `&` — a fonte que o WebFetch leu provavelmente devolveu
+    HTML não decodificado e o subagente copiou o texto bruto. Não quebra
+    o validador (não há regra contra entidade HTML), mas aparece errado
+    na tela. Vale um ajuste pequeno no prompt (pedir pra decodificar
+    entidades HTML antes de citar) ou um `unescape` no validador/quadro.
+  - **3ª tentativa deste bolt** — as duas anteriores pararam por limite de
+    sessão (no meio da implementação, sem perda de trabalho — o código já
+    escrito ficou íntegro no working tree e foi retomado daí).
 
 ## Bolt 7 — Testes de aceite do Inception
 

@@ -772,3 +772,11 @@ deste agente ou da plataforma.
 - **Integração com o Agente de Panorama:** os finalistas do Panorama
   chegam aqui como recortes prontos (tema, pergunta-problema, atores),
   dispensando a primeira rodada da entrevista.
+- **Lista de sessões existentes no quadro** (achado em uso real,
+  2026-10-07, Lucas): hoje "Abrir…" é só um seletor de arquivo bruto do
+  sistema operacional, apontando pra um `mapa.json` — não existe uma
+  lista dentro do app mostrando os recortes já existentes em
+  `agente-sistemico/sessoes/` (ex.: `rec_bicicleta`, `rec_lastmile`) por
+  nome. Squad teria que saber o caminho do arquivo de antemão. Bolt
+  pequeno: ler `sessoes/` no servidor (`GET /api/sessoes` listando
+  pastas), mostrar como lista clicável ao lado do botão "Abrir…".

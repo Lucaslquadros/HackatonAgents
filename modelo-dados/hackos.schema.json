@@ -350,6 +350,68 @@
         "finalista": { "$ref": "#/$defs/finalista_panorama" }
       }
     },
+
+    "fato_sugerido": {
+      "description": "Bolt 6 do Agente de Panorama: um fato proposto pelo motor, ainda não aceito pelo squad. Nunca problema, hipótese ou solução — só texto + evidência + classificação CSD sugerida (o squad decide se aceita).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["texto", "evidencia", "classificacao_csd_sugerida"],
+      "properties": {
+        "texto": { "$ref": "#/$defs/texto" },
+        "evidencia": { "$ref": "#/$defs/evidencia" },
+        "classificacao_csd_sugerida": { "$ref": "#/$defs/classificacao_csd" }
+      }
+    },
+    "pedido_panorama": {
+      "description": "Bolt 6: o que o quadro manda para o motor pesquisar fatos de um cenário. fatos_existentes é só para o motor não repetir o que o squad já registrou.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["versao", "id", "cenario", "fatos_existentes", "criado_em"],
+      "properties": {
+        "versao": { "const": 1 },
+        "id": { "$ref": "#/$defs/id" },
+        "cenario": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["nome"],
+          "properties": {
+            "nome": { "$ref": "#/$defs/texto_curto" },
+            "descricao": { "$ref": "#/$defs/texto" }
+          }
+        },
+        "fatos_existentes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["texto", "classificacao_csd"],
+            "properties": {
+              "texto": { "$ref": "#/$defs/texto" },
+              "classificacao_csd": { "$ref": "#/$defs/classificacao_csd" }
+            }
+          }
+        },
+        "criado_em": { "$ref": "#/$defs/data_hora" }
+      }
+    },
+    "resposta_panorama": {
+      "description": "Bolt 6: resposta do subagente agente-panorama — só propõe fatos, nunca problema/hipótese/solução (garantia de schema: não há campo pra isso).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["versao", "pedido", "criado_em", "fatos_sugeridos"],
+      "properties": {
+        "versao": { "const": 1 },
+        "pedido": { "$ref": "#/$defs/id" },
+        "criado_em": { "$ref": "#/$defs/data_hora" },
+        "fatos_sugeridos": { "type": "array", "maxItems": 6, "items": { "$ref": "#/$defs/fato_sugerido" } },
+        "lacunas": {
+          "description": "O que o motor não achou informação suficiente para afirmar — nunca preenchido por suposição (mesma disciplina do Agente Enquadrador).",
+          "type": "array",
+          "items": { "$ref": "#/$defs/texto" }
+        }
+      }
+    },
+
     "variavel": {
       "type": "object",
       "additionalProperties": false,

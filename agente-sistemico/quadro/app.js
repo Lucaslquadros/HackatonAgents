@@ -19,6 +19,7 @@ import {
   adicionarCluster, atualizarCluster, removerCluster, adicionarElementoCluster, removerElementoCluster,
   adicionarProblema, atualizarProblema, removerProblema, alternarFonteProblema,
   adicionarCriterio, atualizarCriterio, removerCriterio, definirNota,
+  montarPedidoPanorama, aceitarFatoSugerido,
   escolherFinalista, recorteDoFinalista, pedidoVisaoDoFinalista,
   paraContrato as panoramaParaContrato, htmlPanorama,
 } from "./panorama.js";
@@ -86,6 +87,10 @@ let panorama = carregarPanorama();
 let panoramaAberto = false;
 let panoramaCenarioAberto = null;
 let panoramaRascunhoCenario = { nome: "", descricao: "" };
+// Bolt 6: estado do motor por cenário, só em memória (não é salvo em
+// panorama.json) — { [cenarioId]: { estado, comando, sugestoes, lacunas, erro } }.
+let panoramaMotor = {};
+const esperaPanorama = {}; // cenarioId -> intervalId
 // Cadastro do Time (Bolt 2 do agente-orquestrador): só leitura aqui, pro
 // apoio da nota de "aderência ao time" no ranqueamento (Bolt 4). Nunca
 // gravado por este quadro.
@@ -1571,7 +1576,7 @@ function renderPanorama() {
   const chave = `${panorama.cenarios.length}:${panorama.fatos.length}:${panorama.clusters.length}:${panorama.problemas_candidatos.length}:${panorama.criterios_ranqueamento.length}:${panorama.ranqueamento.length}:${panoramaCenarioAberto}:${JSON.stringify(panorama.fatos.map((f) => [f.texto, f.classificacao_csd, f.evidencia]))}:${JSON.stringify(panorama.clusters.map((c) => [c.nome, c.elementos]))}:${JSON.stringify(panorama.problemas_candidatos.map((p) => [p.fontes, p.cluster_origem]))}:${JSON.stringify(panorama.criterios_ranqueamento.map((c) => [c.nome, c.peso]))}:${JSON.stringify(panorama.ranqueamento.map((n) => [n.problema, n.criterio, n.nota]))}`;
   if (digitando && overlayPanorama.dataset.chave === chave) return;
   overlayPanorama.dataset.chave = chave;
-  overlayPanorama.innerHTML = htmlPanorama(panorama, { cenarioAberto: panoramaCenarioAberto, rascunhoCenario: panoramaRascunhoCenario, squad: squadCadastro });
+  overlayPanorama.innerHTML = htmlPanorama(panorama, { cenarioAberto: panoramaCenarioAberto, rascunhoCenario: panoramaRascunhoCenario, squad: squadCadastro, motorPorCenario: panoramaMotor });
 }
 
 el("btn-panorama").addEventListener("click", () => {
@@ -1669,6 +1674,59 @@ function aplicarCampoPanorama(alvo) {
   }
 }
 
+// ---------- motor v1 do Panorama (Bolt 6) ----------
+
+async function pedirFatosPanorama(cenarioId) {
+  let pedido;
+  try {
+    pedido = montarPedidoPanorama(panorama, cenarioId);
+  } catch (erro) {
+    panoramaMotor[cenarioId] = { estado: "erro", erro: erro.message };
+    return render();
+  }
+  try {
+    const r = await fetch(`/api/panorama/sessao/${cenarioId}/pedido`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pedido),
+    });
+    const corpo = await r.json();
+    if (!r.ok) throw new Error(corpo.erro || `HTTP ${r.status}`);
+    aguardarPanorama(cenarioId, corpo.pedido, corpo.comando);
+  } catch (erro) {
+    panoramaMotor[cenarioId] = { estado: "erro", erro: erro.message };
+    render();
+  }
+}
+
+function aguardarPanorama(cenarioId, pedidoId, comando) {
+  clearInterval(esperaPanorama[cenarioId]);
+  panoramaMotor[cenarioId] = { estado: "aguardando", pedido: pedidoId, comando };
+  esperaPanorama[cenarioId] = setInterval(() => consultarRespostaPanorama(cenarioId, pedidoId), 3000);
+  render();
+}
+
+function pararEsperaPanorama(cenarioId) {
+  clearInterval(esperaPanorama[cenarioId]);
+  delete esperaPanorama[cenarioId];
+  delete panoramaMotor[cenarioId];
+}
+
+async function consultarRespostaPanorama(cenarioId, pedidoId) {
+  try {
+    const r = await fetch(`/api/panorama/sessao/${cenarioId}/resposta`);
+    if (r.status !== 200) return; // 202: ainda aguardando
+    const resposta = await r.json();
+    if (resposta.pedido !== pedidoId) return;
+    clearInterval(esperaPanorama[cenarioId]);
+    delete esperaPanorama[cenarioId];
+    panoramaMotor[cenarioId] = { estado: "pronto", sugestoes: resposta.fatos_sugeridos || [], lacunas: resposta.lacunas || [] };
+    render();
+  } catch {
+    /* servidor caiu ou rede instável: tenta de novo no próximo ciclo */
+  }
+}
+
 overlayPanorama.addEventListener("click", (e) => {
   const aba = e.target.closest("[data-panorama-abrir-cenario]");
   if (aba) {
@@ -1754,6 +1812,38 @@ overlayPanorama.addEventListener("click", (e) => {
   if (b.dataset.panoramaAcao === "escolher-finalista") {
     escolherFinalistaEGravarPedido(b.dataset.problema);
     return;
+  }
+  if (b.dataset.panoramaAcao === "pedir-fatos-agente") {
+    b.disabled = true;
+    pedirFatosPanorama(b.dataset.cenario);
+    return;
+  }
+  if (b.dataset.panoramaAcao === "cancelar-pedido-motor") {
+    pararEsperaPanorama(b.dataset.cenario);
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "copiar-comando-motor") {
+    const comando = panoramaMotor[b.dataset.cenario]?.comando || `/panorama ${b.dataset.cenario}`;
+    navigator.clipboard?.writeText(comando).then(() => {
+      b.textContent = "Copiado";
+      setTimeout(() => { b.textContent = "Copiar comando"; }, 1500);
+    });
+    return;
+  }
+  if (b.dataset.panoramaAcao === "aceitar-fato-sugerido") {
+    const motor = panoramaMotor[b.dataset.cenario];
+    const sugestao = motor?.sugestoes?.[Number(b.dataset.sugestao)];
+    if (!sugestao) return;
+    aceitarFatoSugerido(panorama, b.dataset.cenario, sugestao);
+    motor.sugestoes = motor.sugestoes.filter((_, i) => i !== Number(b.dataset.sugestao));
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "recusar-fato-sugerido") {
+    const motor = panoramaMotor[b.dataset.cenario];
+    if (!motor?.sugestoes) return;
+    motor.sugestoes = motor.sugestoes.filter((_, i) => i !== Number(b.dataset.sugestao));
+    return render();
   }
 });
 
