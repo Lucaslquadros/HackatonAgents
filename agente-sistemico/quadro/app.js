@@ -7,11 +7,21 @@ import {
   moverVariavel, atualizar, remover, pendencias, chaveLoop, anotarLoop,
   removerAnotacao, atualizarAnalise, adicionarAlavanca, removerAlavanca,
   aceitarConexao, aceitarVariavel, novoEstacionamento, estacionar, mudarStatusIdeia,
+  aceitarSetaRascunho, ehIdTemporario, novoCsd, proporSetaParaCsd, aceitarItemCsd, mudarStatusItemCsd,
 } from "./estado.js";
 import { validarMapa } from "./validador.js";
-import { htmlPainel, organizarLoops } from "./painel.js";
-import { montarPedido, mesclarVisoes, mudarStatus, htmlVisoes, situacaoConexao, dataHoraLocal } from "./visoes.js";
+import { htmlPainel, organizarLoops, ROTULO_STATUS_CSD } from "./painel.js";
+import { montarPedido, mesclarVisoes, mudarStatus, htmlVisoes, situacaoConexao, situacaoSetaRascunho, atualizarRascunho, dataHoraLocal } from "./visoes.js";
 import { novaEntrevista, registrarRodada, rodadaAberta, responderRodada, aplicarRespostas, aceitarProposta, entrevistaParaPedido, htmlEntrevista } from "./entrevista.js";
+import { abrirRitual, enviarReflexao, encerrarReflexoes, ligarAoMapa, registrarDivergencia, enviarReflexaoParaCsd, ritualParaPedido, textoCronometro, htmlRitual } from "./ritual.js";
+import {
+  normalizarPanorama, adicionarCenario, removerCenario, adicionarFato, removerFato, atualizarFato,
+  adicionarCluster, atualizarCluster, removerCluster, adicionarElementoCluster, removerElementoCluster,
+  adicionarProblema, atualizarProblema, removerProblema, alternarFonteProblema,
+  adicionarCriterio, atualizarCriterio, removerCriterio, definirNota,
+  escolherFinalista, recorteDoFinalista, pedidoVisaoDoFinalista,
+  paraContrato as panoramaParaContrato, htmlPanorama,
+} from "./panorama.js";
 
 const CHAVE_RASCUNHO = "hackos.quadro.rascunho";
 const CHAVE_AUTOR = "hackos.quadro.autor";
@@ -28,6 +38,8 @@ const lateral = el("lateral");
 const inspetor = el("inspetor");
 const painel = el("painel");
 const painelVisoes = el("visoes");
+const overlayRitual = el("ritual-overlay");
+const overlayPanorama = el("panorama-overlay");
 const status = el("status");
 const campoAutor = el("autor");
 
@@ -49,12 +61,35 @@ let estadoMotor = { motor: "pronto" };
 let espera = null;
 const CHAVE_ESTACIONAMENTO = "hackos.quadro.estacionamento.";
 let estacionamento = carregarEstacionamento();
+const CHAVE_CSD = "hackos.quadro.csd.";
+let csd = carregarCsd();
 let rascunhoIdeia = "";
 const CHAVE_ENTREVISTA = "hackos.quadro.entrevista.";
 let entrevista = carregarEntrevista();
 let rascunhosEntrevista = {}; // respostas em edição, por pergunta
 let rascunhoProposta = {};
 let ultimasMudancas = [];
+const CHAVE_RITUAL = "hackos.quadro.ritual.";
+let ritual = carregarRitual();
+// Estado só do quadro (não persistido fora do localStorage): mostra a tela
+// de configuração antes de `ritual` existir, e qual sub-tela da reflexão
+// individual ("entrada" | "interludio" | "confirmar-encerrar") está ativa.
+let ritualMostrarConfig = false;
+let ritualEtapaLocal = "entrada";
+let ritualRascunho = { pergunta_generativa: "", duracao_min: 5 };
+// Panorama (Bolt 1 do Agente de Panorama): ao contrário de csd/estacionamento/
+// entrevista/ritual, não é por recorte — é um objeto só por squad, que
+// existe antes de qualquer recorte do Sistêmico nascer (Inception do
+// Panorama, decisão 13). Chave fixa, sem sufixo de recorte.
+const CHAVE_PANORAMA = "hackos.quadro.panorama";
+let panorama = carregarPanorama();
+let panoramaAberto = false;
+let panoramaCenarioAberto = null;
+let panoramaRascunhoCenario = { nome: "", descricao: "" };
+// Cadastro do Time (Bolt 2 do agente-orquestrador): só leitura aqui, pro
+// apoio da nota de "aderência ao time" no ranqueamento (Bolt 4). Nunca
+// gravado por este quadro.
+let squadCadastro = { hackathon: "", membros: [] };
 
 campoAutor.value = lerArmazenado(CHAVE_AUTOR, (t) => t) || "mem_squad";
 
@@ -167,7 +202,18 @@ function renderSetas(caixas) {
   const fantasmas = visoes
     .filter((v) => v.status === "aberta" && v.tipo === "conexao_sugerida" && v.proposta_seta && situacaoConexao(mapa, v.proposta_seta) === "pode_aceitar")
     .map((v) => ({ ...v.proposta_seta, id: `fantasma:${v.chave}`, chaveVisao: v.chave, status: "fantasma" }));
-  for (const s of [...mapa.setas, ...fantasmas]) {
+  // Setas de um rascunho (Bolt 7b) só desenham no quadro quando as duas
+  // pontas já existem (variável real ou já adicionada pelo botão "Adicionar");
+  // antes disso não há posição para desenhar.
+  const fantasmasRascunho = visoes
+    .filter((v) => v.status === "aberta" && v.tipo === "rascunho_mapa" && v.proposta_rascunho)
+    .flatMap((v) => v.proposta_rascunho.setas.map((sp, idx) => ({ sp, idx, v }))
+      .filter(({ sp, idx, v }) => !(v.decisoesSetas || [])[idx] && situacaoSetaRascunho(mapa, sp, v.mapaTemp || {}) === "pode_aceitar")
+      .map(({ sp, idx, v }) => {
+        const resolver = (ref) => (ehIdTemporario(ref) ? v.mapaTemp[ref] : ref);
+        return { de: resolver(sp.de), para: resolver(sp.para), polaridade: sp.polaridade, atraso: sp.atraso, mecanismo: sp.mecanismo, id: `rascunho:${v.chave}:${idx}`, chaveVisao: v.chave, status: "fantasma" };
+      }));
+  for (const s of [...mapa.setas, ...fantasmas, ...fantasmasRascunho]) {
     const c1 = caixas.get(s.de);
     const c2 = caixas.get(s.para);
     if (!c1 || !c2) continue;
@@ -304,6 +350,8 @@ function render() {
   renderVisoes();
   renderAbas();
   renderStatus();
+  renderRitual();
+  renderPanorama();
   gravarArmazenado(CHAVE_RASCUNHO, JSON.stringify(mapa));
 }
 
@@ -340,7 +388,7 @@ function renderPainel() {
   const chave = loopAberto || "";
   if (digitando && painel.dataset.loop === chave) return;
   painel.dataset.loop = chave;
-  painel.innerHTML = htmlPainel(mapa, validacao, { loopAberto });
+  painel.innerHTML = htmlPainel(mapa, validacao, { loopAberto, csd });
   for (const d of painel.querySelectorAll("details")) {
     if (detalhesAbertos.has(d.className)) d.open = true;
   }
@@ -381,6 +429,10 @@ painel.addEventListener("click", (e) => {
     operar(() => removerAlavanca(mapa, botao.dataset.removerAlavanca));
   } else if (botao.id === "btn-alavanca") {
     criarAlavanca();
+  } else if (botao.dataset.csdStatus) {
+    mudarStatusItemCsd(csd, botao.dataset.csdId, botao.dataset.csdStatus);
+    gravarCsd();
+    render();
   }
 });
 
@@ -419,13 +471,15 @@ function criarAlavanca() {
   const refs = tipo === "loop" ? setasDaChave(ref) : ref ? [ref] : [];
   try {
     guardarHistorico();
+    const suposicoesEl = el("alv-suposicoes");
     adicionarAlavanca(mapa, {
       alvo: { tipo, refs },
       nivel_meadows: el("alv-nivel").value,
       impacto_esperado: el("alv-impacto").value,
       teste_sanidade: el("alv-sanidade").value,
       autor: autor(),
-    });
+      suposicoes: suposicoesEl ? [...suposicoesEl.selectedOptions].map((o) => o.value) : [],
+    }, csd.itens);
     for (const k of Object.keys(f)) delete f[k];
     detalhesAbertos.delete("nova-alavanca");
     render();
@@ -496,7 +550,7 @@ function renderInspetor() {
   if (digitando && inspetor.dataset.alvo === alvo) return;
   inspetor.dataset.alvo = alvo;
   if (v) inspetor.innerHTML = htmlVariavel(v);
-  else if (s) inspetor.innerHTML = htmlSeta(s);
+  else if (s) inspetor.innerHTML = htmlSeta(s, csd);
   else inspetor.innerHTML = htmlContexto();
 }
 
@@ -566,7 +620,26 @@ function htmlVariavel(v) {
     <p class="meta-info">${v.id} · autor ${esc(v.autor)} · ${v.status}</p>`;
 }
 
-function htmlSeta(s) {
+// Suposição sem item na CSD ainda: formulário para propor. Com item: só
+// mostra o status (confirmar/descartar fica no painel Análise, junto com o
+// resto da Matriz CSD).
+function htmlCsdDaSeta(csd, s) {
+  if (s.classificacao !== "suposicao") return "";
+  const item = s.csd_item ? csd.itens.find((i) => i.id === s.csd_item) : null;
+  if (item) {
+    return `
+      <label>Matriz CSD</label>
+      <p class="dica">${ROTULO_STATUS_CSD[item.status] || item.status}${item.pergunta_pesquisa ? `: ${esc(item.pergunta_pesquisa)}` : ""}</p>`;
+  }
+  return `
+    <label for="f-csd-pergunta">Propor esta suposição para a Matriz CSD</label>
+    <p class="dica">Que pergunta de pesquisa resolveria essa suposição?</p>
+    <textarea id="f-csd-pergunta" placeholder="Ex.: nas rotas que perderam entregador, o tempo sobe mais que nas outras?"></textarea>
+    <p class="erro" id="csd-erro" role="alert"></p>
+    <div class="linha-acoes"><button type="button" data-csd-propor="${s.id}">Propor para a CSD</button></div>`;
+}
+
+function htmlSeta(s, csd) {
   const de = varPorId(s.de)?.nome || s.de;
   const para = varPorId(s.para)?.nome || s.para;
   return `
@@ -589,6 +662,7 @@ function htmlSeta(s) {
       <label><input type="radio" name="classificacao" value="certeza" ${s.classificacao === "certeza" ? "checked" : ""}> Certeza</label>
     </div>
     ${s.classificacao === "certeza" ? `<input type="text" data-campo="fonte" class="obrigatorio" placeholder="Fonte da certeza" value="${esc(s.fonte)}">` : ""}
+    ${htmlCsdDaSeta(csd, s)}
     <div class="linha-acoes"><button type="button" class="perigo" data-remover="${s.id}">Apagar seta</button></div>
     <p class="meta-info">${s.id} · autor ${esc(s.autor)} · ${s.status}</p>`;
 }
@@ -647,6 +721,20 @@ inspetor.addEventListener("click", (e) => {
     operar(() => adicionarAtor(mapa, { nome, papeis }));
   } else if (botao.id === "btn-ligar") {
     criarSeta(selecionado, el("f-ligar-para").value, el("f-ligar-pol").value);
+  } else if (botao.dataset.csdPropor) {
+    const pergunta = el("f-csd-pergunta")?.value.trim();
+    if (!pergunta) {
+      el("csd-erro").textContent = "Escreva a pergunta de pesquisa antes de propor.";
+      return;
+    }
+    try {
+      operar(() => proporSetaParaCsd(csd, mapa, botao.dataset.csdPropor, { pergunta_pesquisa: pergunta, autor: autor(), agora: dataHoraLocal() }));
+      gravarCsd();
+      render();
+    } catch (erro) {
+      historico.pop();
+      el("csd-erro").textContent = erro.message;
+    }
   }
 });
 
@@ -803,11 +891,19 @@ function carregar(dado, nome) {
   arquivoAberto = nome ? { name: nome } : null;
   visoes = carregarVisoes();
   estacionamento = carregarEstacionamento();
+  csd = carregarCsd();
   entrevista = carregarEntrevista();
   rascunhosEntrevista = {};
   ultimasMudancas = [];
+  ritual = carregarRitual();
+  ritualMostrarConfig = false;
+  ritualEtapaLocal = "entrada";
   render();
-  if (estadoMotor.motor !== "sem_servidor") sincronizarEstacionamento().then(render);
+  if (estadoMotor.motor !== "sem_servidor") {
+    sincronizarEstacionamento().then(render);
+    sincronizarCsd().then(render);
+    sincronizarRitual().then(render);
+  }
 }
 
 el("btn-abrir").addEventListener("click", async () => {
@@ -925,12 +1021,14 @@ async function verificarServidor() {
   if (estadoMotor.motor !== "sem_servidor") {
     await sincronizarEstacionamento();
     await sincronizarEntrevista();
+    await sincronizarCsd();
+    await sincronizarRitual();
   }
   render();
 }
 
 async function pedirVisao(gatilho = "pedido") {
-  const pedido = montarPedido(mapa, validacao, visoes, { estacionamento, gatilho, entrevista: entrevistaParaPedido(entrevista) });
+  const pedido = montarPedido(mapa, validacao, visoes, { estacionamento, csd, gatilho, entrevista: entrevistaParaPedido(entrevista), ritual: ritualParaPedido(ritual) });
   try {
     const r = await fetch(API(mapa.recorte, "pedido"), {
       method: "POST",
@@ -1005,7 +1103,7 @@ painelVisoes.addEventListener("click", async (e) => {
   } else if (botao.dataset.ref) {
     irParaElemento(botao.dataset.ref);
   } else if (botao.dataset.visaoAcao) {
-    agirSobreVisao(botao.dataset.visaoAcao, botao.dataset.chave);
+    agirSobreVisao(botao.dataset.visaoAcao, botao.dataset.chave, botao.dataset);
   } else if (botao.id === "btn-estacionar") {
     estacionarIdeia(el("nova-ideia").value, el("nova-ideia-etapa").value);
   } else if (botao.dataset.ideia) {
@@ -1046,8 +1144,9 @@ painelVisoes.addEventListener("focusout", (e) => {
   if (e.target.matches("textarea, input[type=text]") && !painelVisoes.contains(e.relatedTarget)) setTimeout(renderVisoes, 0);
 });
 
-// Decisões do squad sobre cada visão (Bolt 5).
-function agirSobreVisao(acao, chave) {
+// Decisões do squad sobre cada visão (Bolt 5) e sobre cada item de um
+// rascunho de CLD (Bolt 7b).
+function agirSobreVisao(acao, chave, dataset = {}) {
   const visao = visoes.find((v) => v.chave === chave);
   if (!visao) return;
   if (acao === "recusada") {
@@ -1079,6 +1178,50 @@ function agirSobreVisao(acao, chave) {
     selecionado = variavel.id;
     render();
     centralizarNoQuadro(variavel.id);
+  } else if (acao === "rascunho_adicionar_var") {
+    const idTemp = dataset.temp;
+    const proposta = visao.proposta_rascunho.variaveis.find((v) => v.id_temp === idTemp);
+    if (!proposta) return;
+    try {
+      const variavel = operar(() => aceitarVariavel(mapa, proposta, posicaoPerto(visao.refs)));
+      visoes = atualizarRascunho(visoes, chave, { mapaTemp: { ...(visao.mapaTemp || {}), [idTemp]: variavel.id } });
+      gravarVisoes();
+      selecionado = variavel.id;
+      render();
+    } catch (erro) {
+      historico.pop();
+      alert(erro.message);
+    }
+  } else if (acao === "rascunho_aceitar_seta") {
+    const idx = Number(dataset.idx);
+    const proposta = visao.proposta_rascunho.setas[idx];
+    try {
+      const seta = operar(() => aceitarSetaRascunho(mapa, proposta, visao.mapaTemp || {}));
+      const decisoes = [...(visao.decisoesSetas || visao.proposta_rascunho.setas.map(() => null))];
+      decisoes[idx] = "aceita";
+      visoes = atualizarRascunho(visoes, chave, { decisoesSetas: decisoes });
+      gravarVisoes();
+      selecionado = seta.id;
+      render();
+    } catch (erro) {
+      historico.pop();
+      alert(erro.message);
+    }
+  } else if (acao === "rascunho_recusar_seta") {
+    const idx = Number(dataset.idx);
+    const decisoes = [...(visao.decisoesSetas || visao.proposta_rascunho.setas.map(() => null))];
+    decisoes[idx] = "recusada";
+    visoes = atualizarRascunho(visoes, chave, { decisoesSetas: decisoes });
+    gravarVisoes();
+    render();
+  } else if (acao === "aceitar_item_csd") {
+    try {
+      aceitarItemCsd(csd, visao.proposta_csd);
+      gravarCsd();
+      fecharVisao(chave, "aceita");
+    } catch (erro) {
+      alert(erro.message);
+    }
   } else if (acao === "estacionar") {
     try {
       estacionar(estacionamento, { texto: visao.texto_estacionado, autor: autor(), agora: dataHoraLocal() });
@@ -1162,6 +1305,487 @@ async function sincronizarEstacionamento() {
   }
 }
 
+// ---------- Matriz CSD: local + servidor (Bolt 8) ----------
+// Mesmo padrão do estacionamento: vive fora do mapa (ver nota em
+// estado.js), persiste por recorte, e o servidor é o estado oficial.
+
+function carregarCsd() {
+  return lerArmazenado(CHAVE_CSD + mapa.recorte, (t) => JSON.parse(t)) || novoCsd();
+}
+
+function gravarCsd() {
+  gravarArmazenado(CHAVE_CSD + mapa.recorte, JSON.stringify(csd));
+  if (estadoMotor.motor === "sem_servidor") return;
+  fetch(API(mapa.recorte, "csd"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(csd),
+  }).catch(() => { /* fica no navegador; sobe na próxima gravação */ });
+}
+
+async function sincronizarCsd() {
+  try {
+    const r = await fetch(API(mapa.recorte, "csd"));
+    if (!r.ok) return;
+    const doServidor = await r.json();
+    if (doServidor.itens?.length) {
+      csd = doServidor;
+      gravarArmazenado(CHAVE_CSD + mapa.recorte, JSON.stringify(csd));
+    } else if (csd.itens.length) {
+      gravarCsd();
+    }
+  } catch {
+    /* sem servidor: segue com o rascunho local */
+  }
+}
+
+
+// ---------- ritual do fundo do U: local + servidor (Bolt 9) ----------
+// Mesmo padrão do estacionamento/CSD: vive fora do mapa, persiste por
+// recorte, o servidor é o estado oficial.
+
+function carregarRitual() {
+  return lerArmazenado(CHAVE_RITUAL + mapa.recorte, (t) => JSON.parse(t)) || null;
+}
+
+function gravarRitual() {
+  if (ritual) gravarArmazenado(CHAVE_RITUAL + mapa.recorte, JSON.stringify(ritual));
+  if (estadoMotor.motor === "sem_servidor" || !ritual) return;
+  fetch(API(mapa.recorte, "ritual"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ritual),
+  }).catch(() => { /* fica no navegador; sobe na próxima gravação */ });
+}
+
+async function sincronizarRitual() {
+  try {
+    const r = await fetch(API(mapa.recorte, "ritual"));
+    if (!r.ok) return;
+    const doServidor = await r.json();
+    if (doServidor.reflexoes?.length) {
+      ritual = doServidor;
+      gravarArmazenado(CHAVE_RITUAL + mapa.recorte, JSON.stringify(ritual));
+    } else if (ritual?.reflexoes?.length) {
+      gravarRitual();
+    }
+  } catch {
+    /* sem servidor: segue com o rascunho local */
+  }
+}
+
+// Expande seleções do <select multiple> da revelação: cada <option> carrega
+// `data-ids` com os ids reais (uma opção de loop vira as setas do loop,
+// porque o contrato só aceita ids com prefixo, não a chave composta do loop).
+function idsSelecionados(select) {
+  return [...select.selectedOptions].flatMap((o) => o.dataset.ids.split(","));
+}
+
+function renderRitual() {
+  const visivel = ritualMostrarConfig || (!!ritual && !ritual._painelReaberto);
+  overlayRitual.hidden = !visivel;
+  if (overlayRitual.hidden) return;
+  const digitando = overlayRitual.contains(document.activeElement) && document.activeElement.matches("textarea, input, select");
+  const chave = !ritual
+    ? "config"
+    : !ritual.encerrado_em
+      ? `${ritual.reflexoes.length}:${ritualEtapaLocal}`
+      : `revelado:${ritual.reflexoes.length}:${JSON.stringify(ritual.integracao || {}).length}:${(ritual.enviadasCsd || []).length}`;
+  if (digitando && overlayRitual.dataset.chave === chave) return;
+  overlayRitual.dataset.chave = chave;
+  overlayRitual.innerHTML = htmlRitual(ritual, { etapa: ritualEtapaLocal, rascunhoConfig: ritualRascunho, mapa, csd });
+}
+
+// Só atualiza o texto do cronômetro — redesenhar o formulário inteiro a
+// cada segundo apagaria o que a pessoa está digitando.
+function atualizarCronometroRitual() {
+  if (!ritual || ritual.encerrado_em) return;
+  if (overlayRitual.hidden) return;
+  const alvo = overlayRitual.querySelector(".ritual-cronometro");
+  if (!alvo) return;
+  const { texto, esgotado } = textoCronometro(ritual);
+  alvo.textContent = texto;
+  alvo.classList.toggle("esgotado", esgotado);
+}
+setInterval(atualizarCronometroRitual, 1000);
+
+el("btn-ritual").addEventListener("click", () => {
+  if (ritual && ritual._painelReaberto) {
+    ritual._painelReaberto = false; // reabre a revelação para continuar a integração
+  } else if (!ritual) {
+    ritualMostrarConfig = true;
+    ritualRascunho = { pergunta_generativa: "", duracao_min: 5 };
+  }
+  render();
+});
+
+overlayRitual.addEventListener("submit", (e) => {
+  if (e.target.id !== "form-ritual-reflexao") return;
+  e.preventDefault();
+  const tipo = overlayRitual.querySelector('input[name="rit-tipo"]:checked')?.value || "percepcao";
+  const texto = el("rit-texto").value;
+  try {
+    enviarReflexao(ritual, { autor: autor(), tipo, texto, agora: dataHoraLocal() });
+    ritualEtapaLocal = "interludio";
+    gravarRitual();
+    render();
+  } catch (erro) {
+    el("ritual-reflexao-erro").textContent = erro.message;
+  }
+});
+
+overlayRitual.addEventListener("change", (e) => {
+  if (e.target.id === "rit-pergunta-sugerida" && e.target.value) {
+    el("rit-pergunta").value = e.target.value;
+  }
+});
+
+overlayRitual.addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+
+  if (b.id === "btn-ritual-cancelar") {
+    ritualMostrarConfig = false;
+    return render();
+  }
+  if (b.id === "btn-ritual-abrir") {
+    try {
+      const nova = abrirRitual(mapa, { pergunta_generativa: el("rit-pergunta").value, duracao_min: Number(el("rit-duracao").value), agora: dataHoraLocal() });
+      ritual = nova;
+      ritualMostrarConfig = false;
+      ritualEtapaLocal = "entrada";
+      gravarRitual();
+      return render();
+    } catch (erro) {
+      return void (el("ritual-erro").textContent = erro.message);
+    }
+  }
+  if (b.id === "btn-ritual-proximo") { ritualEtapaLocal = "entrada"; return render(); }
+  if (b.id === "btn-ritual-terminamos") { ritualEtapaLocal = "confirmar-encerrar"; return render(); }
+  if (b.id === "btn-ritual-voltar") { ritualEtapaLocal = "entrada"; return render(); }
+  if (b.id === "btn-ritual-confirmar-encerrar") {
+    try {
+      const ids = (el("rit-seguiu-sem").value || "").split(",");
+      encerrarReflexoes(ritual, { seguiuSem: ids, agora: dataHoraLocal() });
+      gravarRitual();
+      return render();
+    } catch (erro) {
+      return void (el("ritual-encerrar-erro").textContent = erro.message);
+    }
+  }
+  if (b.dataset.ritualLigar) {
+    const id = b.dataset.ritualLigar;
+    const select = overlayEl(`[data-ligar="${id}"]`);
+    ligarAoMapa(ritual, id, idsSelecionados(select));
+    gravarRitual();
+    return render();
+  }
+  if (b.dataset.ritualNaoMapa) {
+    ligarAoMapa(ritual, b.dataset.ritualNaoMapa, []);
+    gravarRitual();
+    return render();
+  }
+  if (b.dataset.ritualCsd) {
+    const id = b.dataset.ritualCsd;
+    const tipo = overlayEl(`[data-csd-tipo="${id}"]`).value;
+    const texto = overlayEl(`[data-csd-texto="${id}"]`).value.trim();
+    try {
+      enviarReflexaoParaCsd(ritual, mapa, csd, id, {
+        tipo, autor: autor(), agora: dataHoraLocal(),
+        pergunta_pesquisa: tipo === "suposicao" ? texto : undefined,
+        tarefa_discovery: tipo === "duvida" ? texto : undefined,
+      });
+      gravarRitual();
+      gravarCsd();
+      return render();
+    } catch (erro) {
+      return void (el(`ritual-csd-erro-${id}`).textContent = erro.message);
+    }
+  }
+  if (b.id === "btn-ritual-divergencia") {
+    const select = el("rit-divergencia-reflexoes");
+    const ids = [...select.selectedOptions].map((o) => o.value);
+    const texto = el("rit-divergencia-texto").value;
+    try {
+      registrarDivergencia(ritual, ids, texto);
+      gravarRitual();
+      return render();
+    } catch (erro) {
+      return void (el("ritual-divergencia-erro").textContent = erro.message);
+    }
+  }
+  if (b.id === "btn-ritual-reabrir-painel") {
+    ritual._painelReaberto = true;
+    gravarRitual();
+    return render();
+  }
+  if (b.id === "btn-ritual-reabrir-painel-pedir") {
+    ritual._painelReaberto = true;
+    gravarRitual();
+    render();
+    return pedirVisao("pos_ritual");
+  }
+});
+
+// ---------- panorama: local + servidor (Bolt 1 do Agente de Panorama) ----------
+// Não é por recorte (ver nota da declaração de `panorama` acima). O
+// servidor expõe /api/panorama direto, sem passar por API(recorte, ...).
+
+function carregarPanorama() {
+  return lerArmazenado(CHAVE_PANORAMA, (t) => normalizarPanorama(JSON.parse(t)));
+}
+
+function gravarPanorama() {
+  gravarArmazenado(CHAVE_PANORAMA, JSON.stringify(panorama));
+  if (estadoMotor.motor === "sem_servidor") return;
+  fetch("/api/panorama", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(panoramaParaContrato(panorama)),
+  }).catch(() => { /* fica no navegador; sobe na próxima gravação */ });
+}
+
+async function sincronizarPanorama() {
+  try {
+    const r = await fetch("/api/panorama");
+    if (!r.ok) return;
+    panorama = normalizarPanorama(await r.json());
+  } catch { /* sem servidor: segue com o que está no navegador */ }
+}
+
+// Cadastro do Time é lido uma vez ao abrir o quadro — é dado de outro
+// agente (agente-orquestrador), não precisa de polling constante; se
+// mudar no meio da sessão, reabrir o Panorama já busca de novo.
+async function sincronizarSquad() {
+  try {
+    const r = await fetch("/api/squad");
+    if (!r.ok) return;
+    squadCadastro = await r.json();
+  } catch { /* sem servidor ou sem squad.json ainda: segue vazio */ }
+}
+
+function renderPanorama() {
+  overlayPanorama.hidden = !panoramaAberto;
+  if (overlayPanorama.hidden) return;
+  const digitando = overlayPanorama.contains(document.activeElement) && document.activeElement.matches("textarea, input, select");
+  const chave = `${panorama.cenarios.length}:${panorama.fatos.length}:${panorama.clusters.length}:${panorama.problemas_candidatos.length}:${panorama.criterios_ranqueamento.length}:${panorama.ranqueamento.length}:${panoramaCenarioAberto}:${JSON.stringify(panorama.fatos.map((f) => [f.texto, f.classificacao_csd, f.evidencia]))}:${JSON.stringify(panorama.clusters.map((c) => [c.nome, c.elementos]))}:${JSON.stringify(panorama.problemas_candidatos.map((p) => [p.fontes, p.cluster_origem]))}:${JSON.stringify(panorama.criterios_ranqueamento.map((c) => [c.nome, c.peso]))}:${JSON.stringify(panorama.ranqueamento.map((n) => [n.problema, n.criterio, n.nota]))}`;
+  if (digitando && overlayPanorama.dataset.chave === chave) return;
+  overlayPanorama.dataset.chave = chave;
+  overlayPanorama.innerHTML = htmlPanorama(panorama, { cenarioAberto: panoramaCenarioAberto, rascunhoCenario: panoramaRascunhoCenario, squad: squadCadastro });
+}
+
+el("btn-panorama").addEventListener("click", () => {
+  panoramaAberto = true;
+  render();
+});
+
+overlayPanorama.addEventListener("submit", (e) => {
+  if (e.target.id !== "form-panorama-cenario") return;
+  e.preventDefault();
+  try {
+    const c = adicionarCenario(panorama, { nome: el("pan-cenario-nome").value, descricao: el("pan-cenario-descricao").value });
+    panoramaCenarioAberto = c.id;
+    panoramaRascunhoCenario = { nome: "", descricao: "" };
+    gravarPanorama();
+    render();
+  } catch (erro) {
+    el("panorama-cenario-erro").textContent = erro.message;
+  }
+});
+
+// Campos de um fato (texto, classificação, evidência) atualizam o estado a
+// cada tecla, sem redesenhar a tela — perderia o foco. `render()` roda no
+// próximo clique/ação (ex.: trocar de cenário), que já redesenha tudo.
+overlayPanorama.addEventListener("input", (e) => aplicarCampoPanorama(e.target));
+overlayPanorama.addEventListener("change", (e) => aplicarCampoPanorama(e.target));
+
+function aplicarCampoPanorama(alvo) {
+  const fatoId = alvo.dataset.fato;
+  const campo = alvo.dataset.panoramaCampo;
+  if (campo && fatoId) {
+    try {
+      if (campo.startsWith("evidencia.")) {
+        const sub = campo.split(".")[1];
+        atualizarFato(panorama, fatoId, { evidencia: { [sub]: alvo.value } });
+      } else {
+        atualizarFato(panorama, fatoId, { [campo]: alvo.value });
+      }
+      gravarPanorama();
+    } catch (erro) {
+      status.textContent = erro.message;
+    }
+    return;
+  }
+  const clusterCampo = alvo.dataset.panoramaClusterCampo;
+  const clusterId = alvo.dataset.cluster;
+  if (clusterCampo && clusterId) {
+    try {
+      atualizarCluster(panorama, clusterId, { [clusterCampo]: alvo.value });
+      gravarPanorama();
+    } catch (erro) {
+      status.textContent = erro.message;
+    }
+    return;
+  }
+  const problemaCampo = alvo.dataset.panoramaProblemaCampo;
+  const problemaId = alvo.dataset.problema;
+  if (problemaCampo && problemaId) {
+    try {
+      atualizarProblema(panorama, problemaId, { [problemaCampo]: alvo.value });
+      gravarPanorama();
+    } catch (erro) {
+      status.textContent = erro.message;
+    }
+    return;
+  }
+  const problemaFonteId = alvo.dataset.panoramaProblemaFonte;
+  if (problemaFonteId) {
+    try {
+      alternarFonteProblema(panorama, problemaFonteId, alvo.value, alvo.checked);
+      gravarPanorama();
+    } catch (erro) {
+      status.textContent = erro.message;
+    }
+    return;
+  }
+  const criterioCampo = alvo.dataset.panoramaCriterioCampo;
+  const criterioId = alvo.dataset.criterio;
+  if (criterioCampo && criterioId) {
+    try {
+      atualizarCriterio(panorama, criterioId, { [criterioCampo]: alvo.value });
+      gravarPanorama();
+    } catch (erro) {
+      status.textContent = erro.message;
+    }
+    return;
+  }
+  if ("panoramaNota" in alvo.dataset) {
+    try {
+      definirNota(panorama, alvo.dataset.problema, alvo.dataset.criterio, { nota: alvo.value });
+      gravarPanorama();
+    } catch (erro) {
+      status.textContent = erro.message;
+    }
+  }
+}
+
+overlayPanorama.addEventListener("click", (e) => {
+  const aba = e.target.closest("[data-panorama-abrir-cenario]");
+  if (aba) {
+    panoramaCenarioAberto = aba.dataset.panoramaAbrirCenario;
+    return render();
+  }
+  const b = e.target.closest("button");
+  if (!b) return;
+  if (b.id === "btn-panorama-fechar") {
+    panoramaAberto = false;
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "adicionar-fato") {
+    adicionarFato(panorama, b.dataset.cenario, { autor: autor(), agora: dataHoraLocal() });
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "remover-fato") {
+    removerFato(panorama, b.dataset.fato);
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "remover-cenario") {
+    removerCenario(panorama, b.dataset.cenario);
+    panoramaCenarioAberto = null;
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "adicionar-cluster") {
+    adicionarCluster(panorama, b.dataset.cenario, {});
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "remover-cluster") {
+    removerCluster(panorama, b.dataset.cluster);
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "adicionar-elemento-cluster") {
+    const select = overlayPanorama.querySelector(`[data-panorama-cluster-select="${b.dataset.cluster}"]`);
+    try {
+      adicionarElementoCluster(panorama, b.dataset.cluster, select?.value);
+      gravarPanorama();
+    } catch (erro) {
+      status.textContent = erro.message;
+    }
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "remover-elemento-cluster") {
+    removerElementoCluster(panorama, b.dataset.cluster, b.dataset.elemento);
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "adicionar-problema") {
+    adicionarProblema(panorama, b.dataset.cenario);
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "remover-problema") {
+    removerProblema(panorama, b.dataset.problema);
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "adicionar-criterio") {
+    try {
+      adicionarCriterio(panorama, { nome: "Novo critério", peso: 1 });
+      gravarPanorama();
+    } catch (erro) {
+      status.textContent = erro.message;
+    }
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "adicionar-criterio-sugerido") {
+    adicionarCriterio(panorama, { nome: b.dataset.nome, peso: 1 });
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "remover-criterio") {
+    removerCriterio(panorama, b.dataset.criterio);
+    gravarPanorama();
+    return render();
+  }
+  if (b.dataset.panoramaAcao === "escolher-finalista") {
+    escolherFinalistaEGravarPedido(b.dataset.problema);
+    return;
+  }
+});
+
+// Bolt 5 do Agente de Panorama: escolher o finalista monta o objeto do
+// contrato de saída e grava o pedido-visao.json inicial do recorte via a
+// mesma rota que o Sistêmico já usa (API(recorte, "pedido")) — o quadro
+// do Sistêmico, aberto nesse recorte, encontra a sessão pronta.
+async function escolherFinalistaEGravarPedido(problemaId) {
+  const elErro = el("panorama-finalista-erro");
+  if (elErro) elErro.textContent = "";
+  try {
+    const finalista = escolherFinalista(panorama, problemaId);
+    const recorte = recorteDoFinalista(finalista);
+    const pedido = pedidoVisaoDoFinalista(finalista, recorte, new Date());
+    const r = await fetch(API(recorte, "pedido"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(pedido),
+    });
+    const corpo = await r.json();
+    if (!r.ok) throw new Error(corpo.erro || `HTTP ${r.status}`);
+    gravarPanorama();
+    render();
+  } catch (erro) {
+    if (elErro) elErro.textContent = erro.message;
+    else console.error(erro);
+  }
+}
+
+function overlayEl(seletor) {
+  return overlayRitual.querySelector(seletor);
+}
 
 function irParaElemento(id) {
   if (!existe(id)) return;
@@ -1176,10 +1800,13 @@ window.hackos = {
   obterMapa: () => structuredClone(mapa),
   obterValidacao: () => structuredClone({ loops: validacao.loops, problemas: validacao.problemas }),
   obterVisoes: () => structuredClone(visoes),
+  obterRitual: () => structuredClone(ritual),
 };
 
 render();
 verificarServidor();
+sincronizarPanorama().then(render);
+sincronizarSquad().then(render);
 
 // ---------- entrevista em rodadas (Bolt 7) ----------
 

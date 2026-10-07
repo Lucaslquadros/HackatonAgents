@@ -4,7 +4,7 @@
 // a rede e os eventos ficam em app.js.
 
 import { validarMapa } from "./validador.js";
-import { setaJaExiste } from "./estado.js";
+import { setaJaExiste, ehIdTemporario } from "./estado.js";
 
 export const LIMITE_VISOES = 3;
 
@@ -17,6 +17,7 @@ export const TIPOS_VISAO = {
   hipotese: "Hipótese",
   estacionar: "Estacionar ideia",
   cobertura_ritual: "Visão do time",
+  rascunho_mapa: "Rascunho de mapa",
 };
 
 const ETAPAS_RETOMADA = [
@@ -47,12 +48,15 @@ function semCamposVazios(mapa) {
 }
 
 // A visão como o contrato espera (sem os campos internos do quadro).
+// `mapaTemp` e `decisoesSetas` só existem no quadro: guardam, por rascunho,
+// que id_temp já virou variável de verdade e o que o squad decidiu de cada
+// seta (Bolt 7b).
 function paraContrato(v) {
-  const { pedido, chave, ...resto } = v;
+  const { pedido, chave, mapaTemp, decisoesSetas, ...resto } = v;
   return resto;
 }
 
-export function montarPedido(mapa, validacao, visoes, { gatilho = "pedido", agora = new Date(), limite = LIMITE_VISOES, estacionamento, entrevista } = {}) {
+export function montarPedido(mapa, validacao, visoes, { gatilho = "pedido", agora = new Date(), limite = LIMITE_VISOES, estacionamento, entrevista, csd, ritual } = {}) {
   const pedido = {
     versao: 1,
     id: idPedido(agora),
@@ -65,6 +69,12 @@ export function montarPedido(mapa, validacao, visoes, { gatilho = "pedido", agor
   };
   if (estacionamento?.itens?.length) pedido.estacionamento = estacionamento;
   if (entrevista?.rodadas?.length) pedido.entrevista = entrevista;
+  // csd é irmã do mapa no contrato (hackos.schema.json), não filha dele —
+  // por isso entra aqui a partir do estado do quadro, não de `mapa`.
+  if (csd?.itens?.length) pedido.csd = csd;
+  // ritual só vai ao motor depois de encerrado (Bolt 9) — mandar um ritual
+  // ainda em reflexão individual não serve a nenhum gatilho do contrato.
+  if (ritual?.encerrado_em) pedido.ritual = ritual;
   return pedido;
 }
 
@@ -73,7 +83,14 @@ export function montarPedido(mapa, validacao, visoes, { gatilho = "pedido", agor
 export function mesclarVisoes(atuais, resposta) {
   const existentes = new Set(atuais.map((v) => v.chave));
   const novas = resposta.visoes
-    .map((v) => ({ ...v, pedido: resposta.pedido, chave: `${resposta.pedido}:${v.id}` }))
+    .map((v) => {
+      const base = { ...v, pedido: resposta.pedido, chave: `${resposta.pedido}:${v.id}` };
+      if (v.tipo === "rascunho_mapa" && v.proposta_rascunho) {
+        base.mapaTemp = {};
+        base.decisoesSetas = v.proposta_rascunho.setas.map(() => null);
+      }
+      return base;
+    })
     .filter((v) => !existentes.has(v.chave));
   return [...atuais, ...novas];
 }
@@ -86,6 +103,12 @@ export function mudarStatus(visoes, chave, status, motivo) {
     else delete nova.motivo_recusa;
     return nova;
   });
+}
+
+// Decisões do squad dentro de um rascunho (Bolt 7b): qual id_temp já virou
+// variável de verdade, e o que foi decidido de cada seta.
+export function atualizarRascunho(visoes, chave, patch) {
+  return visoes.map((v) => (v.chave === chave ? { ...v, ...patch } : v));
 }
 
 function nomeDe(mapa, id) {
@@ -125,6 +148,74 @@ export function preverConexao(mapa, proposta) {
     });
 }
 
+// ---------- rascunho de CLD proposto pelo agente (Bolt 7b) ----------
+
+// Nome para mostrar: variável real (do mapa), variável do rascunho já
+// adicionada (via mapaTemp), ou ainda provisória (pelo nome proposto).
+function nomeRascunhoRef(mapa, rascunho, mapaTemp, ref) {
+  if (!ehIdTemporario(ref)) return nomeDe(mapa, ref);
+  if (mapaTemp[ref]) return nomeDe(mapa, mapaTemp[ref]);
+  return rascunho.variaveis.find((v) => v.id_temp === ref)?.nome || ref;
+}
+
+// "falta_variavel": uma ponta ainda não foi adicionada ao mapa.
+// "ja_existe": as duas pontas já existem e a seta já está no mapa.
+// "pode_aceitar": as duas pontas existem e a seta pode entrar.
+export function situacaoSetaRascunho(mapa, setaProposta, mapaTemp) {
+  const resolver = (ref) => (ehIdTemporario(ref) ? mapaTemp[ref] : ref);
+  const de = resolver(setaProposta.de);
+  const para = resolver(setaProposta.para);
+  if (!de || !para) return "falta_variavel";
+  if (setaJaExiste(mapa, { de, para, polaridade: setaProposta.polaridade })) return "ja_existe";
+  return "pode_aceitar";
+}
+
+function htmlItemVariavelRascunho(v, variavel) {
+  const feita = v.mapaTemp?.[variavel.id_temp];
+  if (feita) {
+    return `<li class="item-rascunho feita">${esc(variavel.nome)} <span class="dica">(${esc(variavel.tipo)}) · adicionada</span></li>`;
+  }
+  return `<li class="item-rascunho">
+    <span>${esc(variavel.nome)} <span class="dica">(${esc(variavel.tipo)})</span></span>
+    <button type="button" class="aceitar" data-visao-acao="rascunho_adicionar_var" data-chave="${esc(v.chave)}" data-temp="${esc(variavel.id_temp)}">Adicionar</button>
+  </li>`;
+}
+
+function htmlItemSetaRascunho(mapa, v, setaProposta, idx) {
+  const rascunho = v.proposta_rascunho;
+  const mapaTemp = v.mapaTemp || {};
+  const decisao = (v.decisoesSetas || [])[idx];
+  const rotulo = `${esc(nomeRascunhoRef(mapa, rascunho, mapaTemp, setaProposta.de))} → ${esc(nomeRascunhoRef(mapa, rascunho, mapaTemp, setaProposta.para))} (${setaProposta.polaridade === "-" ? "−" : "+"}${setaProposta.atraso ? ", com atraso" : ""})`;
+  if (decisao === "aceita") return `<li class="item-rascunho feita">${rotulo} <span class="dica">· aceita</span></li>`;
+  if (decisao === "recusada") return `<li class="item-rascunho recusada">${rotulo} <span class="dica">· recusada</span></li>`;
+  const situacao = situacaoSetaRascunho(mapa, setaProposta, mapaTemp);
+  const mecanismo = `<p class="dica">${esc(setaProposta.mecanismo)}</p>`;
+  if (situacao === "falta_variavel") {
+    return `<li class="item-rascunho pendente">${rotulo}${mecanismo}<p class="aviso">Adicione as variáveis desta seta primeiro.</p></li>`;
+  }
+  if (situacao === "ja_existe") {
+    return `<li class="item-rascunho pendente">${rotulo}${mecanismo}<p class="dica">O time já desenhou essa seta.</p></li>`;
+  }
+  const resolver = (ref) => (ehIdTemporario(ref) ? mapaTemp[ref] : ref);
+  const previa = htmlPrevia(mapa, { de: resolver(setaProposta.de), para: resolver(setaProposta.para), polaridade: setaProposta.polaridade, atraso: setaProposta.atraso, mecanismo: setaProposta.mecanismo });
+  return `<li class="item-rascunho pendente">
+    ${rotulo}${mecanismo}${previa}
+    <div class="linha-acoes">
+      <button type="button" class="aceitar" data-visao-acao="rascunho_aceitar_seta" data-chave="${esc(v.chave)}" data-idx="${idx}">Aceitar esta seta</button>
+      <button type="button" data-visao-acao="rascunho_recusar_seta" data-chave="${esc(v.chave)}" data-idx="${idx}">Recusar</button>
+    </div>
+  </li>`;
+}
+
+function htmlRascunho(mapa, v) {
+  const rascunho = v.proposta_rascunho;
+  return `<div class="rascunho-mapa">
+    <p class="dica">Rascunho proposto pelo agente, tudo suposição. Revise item a item; nada entra no mapa sozinho.</p>
+    <ul class="itens-rascunho">${rascunho.variaveis.map((variavel) => htmlItemVariavelRascunho(v, variavel)).join("")}</ul>
+    <ul class="itens-rascunho">${rascunho.setas.map((seta, idx) => htmlItemSetaRascunho(mapa, v, seta, idx)).join("")}</ul>
+  </div>`;
+}
+
 function htmlPrevia(mapa, proposta) {
   const loops = preverConexao(mapa, proposta);
   if (!loops.length) return `<p class="dica">Aceitar não fecha nenhum loop novo.</p>`;
@@ -154,10 +245,19 @@ function acoesAbertas(mapa, v) {
         <button type="button" data-visao-acao="recusada" data-chave="${esc(v.chave)}">Recusar…</button>
       </div>`;
   }
+  if (v.tipo === "rascunho_mapa" && v.proposta_rascunho) {
+    return `${htmlRascunho(mapa, v)}<div class="linha-acoes">${botoesStatus(v, { respondida: "Terminei de revisar o rascunho" })}</div>`;
+  }
   if (v.tipo === "estacionar" && v.texto_estacionado) {
     return `<div class="linha-acoes">
         <button type="button" class="aceitar" data-visao-acao="estacionar" data-chave="${esc(v.chave)}">Estacionar a ideia</button>
         <button type="button" data-visao-acao="recusada" data-chave="${esc(v.chave)}">Dispensar…</button>
+      </div>`;
+  }
+  if (v.tipo === "hipotese" && v.proposta_csd) {
+    return `<div class="linha-acoes">
+        <button type="button" class="aceitar" data-visao-acao="aceitar_item_csd" data-chave="${esc(v.chave)}">Aceitar para a CSD</button>
+        ${botoesStatus(v)}
       </div>`;
   }
   const extra = v.proposta_variavel
@@ -196,6 +296,8 @@ function htmlVisao(mapa, v, recusando) {
       ${proposta ? `<p class="proposta">Seta proposta: <strong>${esc(nomeDe(mapa, proposta.de))}</strong> → <strong>${esc(nomeDe(mapa, proposta.para))}</strong> (${proposta.polaridade === "-" ? "−" : "+"}${proposta.atraso ? ", com atraso" : ""}). ${esc(proposta.mecanismo)}</p>` : ""}
       ${v.proposta_variavel ? `<p class="proposta">Variável proposta: <strong>${esc(v.proposta_variavel.nome)}</strong> (${esc(v.proposta_variavel.tipo)})</p>` : ""}
       ${v.texto_estacionado ? `<p class="proposta">Ideia para o estacionamento: ${esc(v.texto_estacionado)}</p>` : ""}
+      ${v.proposta_rascunho ? `<p class="proposta">Rascunho: ${v.proposta_rascunho.variaveis.length} variável(is) nova(s), ${v.proposta_rascunho.setas.length} seta(s) proposta(s).</p>` : ""}
+      ${v.proposta_csd ? `<p class="proposta">Item proposto para a CSD: ${esc(v.proposta_csd.texto)}${v.proposta_csd.pergunta_pesquisa ? ` — ${esc(v.proposta_csd.pergunta_pesquisa)}` : ""}</p>` : ""}
       <p class="visao-pergunta">${esc(v.pergunta)}</p>
       ${v.refs.length ? `<p class="refs">${v.refs.map((r) => `<button type="button" class="ref" data-ref="${esc(r)}">${esc(nomeDe(mapa, r))}</button>`).join("")}</p>` : ""}
       <p class="fonte">${esc(v.fonte_teorica.referencia)}${v.fonte_teorica.suplementar ? ` <span class="suplementar">suplementar</span>` : ""}</p>

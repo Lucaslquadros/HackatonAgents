@@ -1,0 +1,187 @@
+/* Mesmos tokens de cor do agente-sistemico/quadro/estilo.css, pra manter a
+   plataforma com uma cara só; o resto é próprio desta tela (formulário, não
+   canvas). */
+:root {
+  --fundo: #f6f7f9;
+  --superficie: #ffffff;
+  --texto: #1d2330;
+  --texto-suave: #5b6475;
+  --borda: #d6dae1;
+  --destaque: #2563eb;
+  --perigo: #b42318;
+  --sucesso: #2f8a4a;
+  --aviso: #92600a;
+  --aviso-fundo: #fdf3dc;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #14171d;
+    --superficie: #1d2129;
+    --texto: #e7eaf0;
+    --texto-suave: #a3abba;
+    --borda: #343a46;
+    --destaque: #6b9bff;
+    --perigo: #ff7b72;
+    --sucesso: #5fcf82;
+    --aviso: #e0ac4e;
+    --aviso-fundo: #3a2f14;
+    color-scheme: dark;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--fundo);
+  color: var(--texto);
+  font-size: 14px;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+
+button {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button:hover { border-color: var(--destaque); }
+button.perigo { color: var(--perigo); }
+button.primario { background: var(--destaque); color: #fff; border-color: var(--destaque); }
+button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: 2px solid var(--destaque);
+  outline-offset: 1px;
+}
+
+input[type="text"], select, textarea {
+  padding: 6px 8px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--superficie);
+  width: 100%;
+}
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--superficie);
+  border-bottom: 1px solid var(--borda);
+}
+.marca { margin-right: auto; }
+
+main {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.campo { display: flex; flex-direction: column; gap: 4px; }
+.campo label { color: var(--texto-suave); font-size: 12px; }
+
+.cartao {
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.membro { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; border: 1px solid var(--borda); }
+.membro-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: -14px -14px 0;
+  padding: 8px 14px;
+  background: var(--fundo);
+  border-bottom: 1px solid var(--borda);
+  border-radius: 10px 10px 0 0;
+}
+.membro-numero { font-weight: 600; font-size: 13px; }
+.botao-remover-membro { font-size: 12px; padding: 4px 10px; border-color: var(--perigo); }
+.membro-cabecalho { display: flex; align-items: center; gap: 8px; }
+.membro-cabecalho input[type="text"] { flex: 1; }
+
+.frentes { display: flex; flex-wrap: wrap; gap: 10px; }
+.frentes label { display: flex; align-items: center; gap: 4px; font-size: 13px; }
+
+.areas { display: flex; flex-direction: column; gap: 8px; }
+.area-linha {
+  display: grid;
+  grid-template-columns: 1fr 140px 1fr auto;
+  gap: 6px;
+  align-items: start;
+}
+
+.rodape-acoes { display: flex; align-items: center; gap: 10px; }
+
+.pendencias {
+  color: var(--perigo);
+  font-size: 13px;
+}
+.pendencias ul { margin: 4px 0 0; padding-left: 18px; }
+
+.avisos {
+  color: var(--aviso);
+  background: var(--aviso-fundo);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+.avisos ul { margin: 4px 0 0; padding-left: 18px; }
+
+.status { font-size: 13px; }
+.status.ok { color: var(--sucesso); }
+.status.erro { color: var(--perigo); }
+
+.dica { color: var(--texto-suave); font-size: 12px; margin: 0; }
+
+/* Abas (Cadastro / Visão da equipe) */
+.abas { display: flex; gap: 6px; }
+.abas button[role="tab"] {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: 2px solid transparent;
+  border-radius: 6px 6px 0 0;
+  padding: 8px 14px;
+}
+.abas button[role="tab"][aria-selected="true"] {
+  border-color: var(--borda);
+  border-bottom-color: var(--destaque);
+  color: var(--destaque);
+  font-weight: 600;
+}
+.painel-conteudo { display: flex; flex-direction: column; gap: 16px; }
+
+/* Visão da equipe */
+.banner { border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.banner-ok { background: color-mix(in srgb, var(--sucesso) 15%, var(--superficie)); color: var(--sucesso); }
+.banner-pendente { background: var(--aviso-fundo); color: var(--aviso); }
+.aviso-linha { color: var(--aviso); font-size: 13px; margin: 0; }
+.lista-resumo { display: flex; flex-direction: column; gap: 10px; }
+.membro-resumo { display: flex; flex-direction: column; gap: 8px; }
+.membro-resumo-cabecalho { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.texto-suave { color: var(--texto-suave); font-size: 12px; }
+.motivos { margin: 0; }
+.selos { display: flex; flex-wrap: wrap; gap: 6px; }
+.selo {
+  display: inline-block;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 12px;
+}
+.selo-ok { background: color-mix(in srgb, var(--sucesso) 20%, var(--superficie)); color: var(--sucesso); border-color: var(--sucesso); }
+.selo-pendente { background: var(--aviso-fundo); color: var(--aviso); border-color: var(--aviso); }

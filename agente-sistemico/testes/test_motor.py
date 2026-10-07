@@ -196,6 +196,115 @@ class ValidadorDaResposta(unittest.TestCase):
         r["proposta_contexto"]["pergunta_problema"] = "Desenvolver um aplicativo de rotas?"
         self.assertRecusada(r, "proposta_contexto.pergunta_problema: descreve solução de produto")
 
+    # Rascunho de CLD proposto pelo agente (Bolt 7b)
+    def resposta_com_rascunho(self, **overrides_rascunho):
+        r = copy.deepcopy(self.resposta)
+        r["visoes"] = [{
+            "id": "vis_rascunho",
+            "tipo": "rascunho_mapa",
+            "texto": "Com a pergunta-problema definida, um primeiro rascunho ajuda a situar o sistema.",
+            "pergunta": "Este rascunho explica o suficiente da pergunta-problema?",
+            "refs": [],
+            "fonte_teorica": {"referencia": "CLD: variáveis, setas e mecanismo", "suplementar": False},
+            "status": "aberta",
+            "proposta_rascunho": {
+                "variaveis": [
+                    {"id_temp": "tmp_a", "nome": "Reputação do app nas lojas de aplicativo", "tipo": "resultado"},
+                    {"id_temp": "tmp_b", "nome": "Candidatos a entregador", "tipo": "neutra"},
+                ],
+                "setas": [
+                    {"de": "var_satisfacao", "para": "tmp_a", "polaridade": "+", "atraso": False, "mecanismo": "Lojistas satisfeitos deixam avaliações melhores nas lojas de aplicativo."},
+                    {"de": "tmp_a", "para": "tmp_b", "polaridade": "+", "atraso": True, "mecanismo": "Reputação melhor atrai candidatos a entregador."},
+                ],
+                **overrides_rascunho,
+            },
+        }]
+        return r
+
+    def test_rascunho_valido(self):
+        self.assertEqual(validar_resposta.problemas(self.resposta_com_rascunho(), self.pedido), [])
+
+    # Hipótese -> proposta de item para a Matriz CSD (Bolt 8)
+    def resposta_com_hipotese(self, **overrides_proposta):
+        r = copy.deepcopy(self.resposta)
+        r["visoes"] = [{
+            "id": "vis_hip",
+            "tipo": "hipotese",
+            "texto": "A capacidade real de entrega por praça nunca foi medida.",
+            "pergunta": "Qual é a capacidade real de entrega de cada praça?",
+            "refs": ["var_carga"],
+            "fonte_teorica": {"referencia": "Matriz CSD", "suplementar": False},
+            "status": "aberta",
+            "proposta_csd": {
+                "id": "csd_01",
+                "tipo": "suposicao",
+                "texto": "A capacidade real de entrega por praça não é conhecida.",
+                "autor": "agente",
+                "criado_em": r["criado_em"],
+                "status": "proposto",
+                "origem": {"etapa": "mapa_sistemico", "ref": "seta_03"},
+                "evidencias": [],
+                "pergunta_pesquisa": "Quantas entregas cada entregador consegue fazer por turno, em média?",
+                **overrides_proposta,
+            },
+        }]
+        return r
+
+    def test_hipotese_com_proposta_csd_valida(self):
+        self.assertEqual(validar_resposta.problemas(self.resposta_com_hipotese(), self.pedido), [])
+
+    def test_hipotese_sem_id_na_proposta_csd_e_recusada_pelo_schema(self):
+        r = self.resposta_com_hipotese()
+        del r["visoes"][0]["proposta_csd"]["id"]
+        achados = validar_resposta.problemas(r, self.pedido)
+        self.assertTrue(achados and all(a.startswith("schema:") for a in achados))
+
+    def test_hipotese_sem_pergunta_pesquisa_e_recusada_pelo_schema(self):
+        r = self.resposta_com_hipotese()
+        del r["visoes"][0]["proposta_csd"]["pergunta_pesquisa"]
+        achados = validar_resposta.problemas(r, self.pedido)
+        self.assertTrue(achados and all(a.startswith("schema:") for a in achados))
+
+    def test_rascunho_ids_temporarios_repetidos(self):
+        r = self.resposta_com_rascunho(variaveis=[
+            {"id_temp": "tmp_a", "nome": "Reputação do app", "tipo": "resultado"},
+            {"id_temp": "tmp_a", "nome": "Candidatos a entregador", "tipo": "neutra"},
+        ])
+        self.assertRecusada(r, "ids temporários repetidos no rascunho")
+
+    def test_rascunho_seta_refere_variavel_inexistente(self):
+        r = self.resposta_com_rascunho(setas=[
+            {"de": "var_satisfacao", "para": "tmp_fantasma", "polaridade": "+", "atraso": False, "mecanismo": "x"},
+        ])
+        self.assertRecusada(r, "refere-se a tmp_fantasma, que não é variável do mapa nem do próprio rascunho")
+
+    def test_rascunho_repete_seta_que_ja_existe_no_mapa(self):
+        # seta_12 do exemplo já liga var_satisfacao -> var_contratos (+).
+        r = self.resposta_com_rascunho(setas=[
+            {"de": "var_satisfacao", "para": "var_contratos", "polaridade": "+", "atraso": False, "mecanismo": "x"},
+        ])
+        self.assertRecusada(r, "repete uma seta que já existe no mapa")
+
+    def test_rascunho_repete_a_mesma_seta_duas_vezes(self):
+        seta = {"de": "var_satisfacao", "para": "tmp_a", "polaridade": "+", "atraso": False, "mecanismo": "x"}
+        r = self.resposta_com_rascunho(setas=[seta, dict(seta)])
+        self.assertRecusada(r, "repete a mesma seta duas vezes")
+
+    def test_rascunho_com_id_tecnico_no_mecanismo(self):
+        r = self.resposta_com_rascunho(setas=[
+            {"de": "var_satisfacao", "para": "tmp_a", "polaridade": "+", "atraso": False, "mecanismo": "Segue o mesmo padrão de var_contratos."},
+        ])
+        self.assertRecusada(r, "o mecanismo de uma seta do rascunho mostra id técnico")
+
+    def test_rascunho_com_variavel_de_solucao(self):
+        r = self.resposta_com_rascunho(variaveis=[
+            {"id_temp": "tmp_a", "nome": "App de roteirização", "tipo": "neutra"},
+            {"id_temp": "tmp_b", "nome": "Candidatos a entregador", "tipo": "neutra"},
+        ], setas=[
+            {"de": "tmp_a", "para": "tmp_b", "polaridade": "+", "atraso": False, "mecanismo": "Uma boa solução seria lançar um aplicativo de roteirização para os entregadores."},
+        ])
+        self.assertRecusada(r, "descreve solução de produto")
+
     def test_schema_vem_primeiro(self):
         r = copy.deepcopy(self.resposta)
         r["visoes"][0]["tipo"] = "solucao"
@@ -207,8 +316,12 @@ class ServidorDoQuadro(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.sessoes_originais = servidor.SESSOES
+        cls.panorama_original = servidor.PANORAMA_ARQ
+        cls.squad_original = servidor.SQUAD_ARQ
         cls.temporario = Path(tempfile.mkdtemp())
         servidor.SESSOES = cls.temporario
+        servidor.PANORAMA_ARQ = cls.temporario / "panorama.json"
+        servidor.SQUAD_ARQ = cls.temporario / "squad.json"
         cls.http = servidor.criar_servidor(0)
         cls.porta = cls.http.server_address[1]
         threading.Thread(target=cls.http.serve_forever, daemon=True).start()
@@ -218,6 +331,8 @@ class ServidorDoQuadro(unittest.TestCase):
         cls.http.shutdown()
         cls.http.server_close()
         servidor.SESSOES = cls.sessoes_originais
+        servidor.PANORAMA_ARQ = cls.panorama_original
+        servidor.SQUAD_ARQ = cls.squad_original
         shutil.rmtree(cls.temporario, ignore_errors=True)
 
     def chamar(self, metodo, rota, corpo=None):
@@ -269,6 +384,59 @@ class ServidorDoQuadro(unittest.TestCase):
         self.assertEqual(self.chamar("POST", "/api/sessoes/rec_novo/entrevista", doc)[0], 200)
         self.assertEqual(json.loads(self.chamar("GET", "/api/sessoes/rec_novo/entrevista")[2]), doc)
         self.assertEqual(self.chamar("POST", "/api/sessoes/rec_novo/entrevista", {"itens": []})[0], 400)
+
+    def test_csd_grava_e_le(self):
+        status, _, corpo = self.chamar("GET", "/api/sessoes/rec_novo/csd")
+        self.assertEqual((status, json.loads(corpo)), (200, {"itens": []}), "sem arquivo, lista vazia")
+        doc = {"itens": [{"id": "csd_01", "tipo": "suposicao", "texto": "x", "autor": "mem_a",
+                           "criado_em": "2026-10-05T10:00:00-03:00", "status": "proposto",
+                           "origem": {"etapa": "mapa_sistemico"}, "evidencias": [], "pergunta_pesquisa": "x?"}]}
+        self.assertEqual(self.chamar("POST", "/api/sessoes/rec_novo/csd", doc)[0], 200)
+        self.assertEqual(json.loads(self.chamar("GET", "/api/sessoes/rec_novo/csd")[2]), doc)
+        self.assertEqual(self.chamar("POST", "/api/sessoes/rec_novo/csd", {"rodadas": []})[0], 400)
+
+    def test_ritual_grava_e_le(self):
+        status, _, corpo = self.chamar("GET", "/api/sessoes/rec_novo/ritual")
+        self.assertEqual((status, json.loads(corpo)), (200, {"reflexoes": []}), "sem arquivo, lista vazia")
+        doc = {"id": "rit_01", "recorte": "rec_novo", "pergunta_generativa": "O que te surpreendeu?",
+               "duracao_min": 5, "aberto_em": "2026-10-05T10:00:00-03:00",
+               "reflexoes": [{"id": "ref_01", "autor": "mem_a", "tipo": "percepcao", "texto": "x",
+                              "criado_em": "2026-10-05T10:01:00-03:00"}]}
+        self.assertEqual(self.chamar("POST", "/api/sessoes/rec_novo/ritual", doc)[0], 200)
+        self.assertEqual(json.loads(self.chamar("GET", "/api/sessoes/rec_novo/ritual")[2]), doc)
+        self.assertEqual(self.chamar("POST", "/api/sessoes/rec_novo/ritual", {"itens": []})[0], 400)
+
+    def test_panorama_grava_e_le(self):
+        # Não é por recorte (/api/panorama direto), diferente dos demais
+        # documentos do squad testados acima.
+        status, _, corpo = self.chamar("GET", "/api/panorama")
+        self.assertEqual((status, json.loads(corpo)), (200, servidor.PANORAMA_VAZIO), "sem arquivo, panorama vazio")
+        doc = {
+            "versao": 1,
+            "cenarios": [{"id": "cen_1", "nome": "Green Tech & Agtech"}],
+            "fatos": [{"id": "fat_1", "cenario": "cen_1", "texto": "x",
+                       "evidencia": {"tipo": "estimativa", "descricao": "conta aberta", "contem_dado_pessoal": False},
+                       "classificacao_csd": "suposicao", "autor": "mem_a"}],
+            "clusters": [], "problemas_candidatos": [], "criterios_ranqueamento": [], "ranqueamento": [],
+        }
+        status, _, corpo = self.chamar("POST", "/api/panorama", doc)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(corpo), {"cenarios": 1, "fatos": 1})
+        self.assertEqual(json.loads(self.chamar("GET", "/api/panorama")[2]), doc)
+        # falta "cenarios" -> recusado
+        self.assertEqual(self.chamar("POST", "/api/panorama", {"fatos": []})[0], 400)
+
+    def test_squad_so_leitura(self):
+        # Bolt 4 do Panorama: lê o Cadastro do Time (dono é agente-orquestrador/
+        # servidor.py) pro apoio da nota de "aderência ao time". Só GET aqui.
+        status, _, corpo = self.chamar("GET", "/api/squad")
+        self.assertEqual((status, json.loads(corpo)), (200, servidor.SQUAD_VAZIO), "sem arquivo, squad vazio")
+        doc = {"hackathon": "Campus Mobile 2026", "membros": [
+            {"id": "mem_1", "nome": "Ana", "areas_afinidade": [{"area": "Green Tech & Agtech", "nivel": "experiencia"}]},
+        ]}
+        servidor.SQUAD_ARQ.write_text(json.dumps(doc), encoding="utf-8")
+        status, _, corpo = self.chamar("GET", "/api/squad")
+        self.assertEqual((status, json.loads(corpo)), (200, doc))
 
     def test_resposta_nao_aceita_post(self):
         status, _, _ = self.chamar("POST", "/api/sessoes/rec_lastmile/resposta", {"x": 1})

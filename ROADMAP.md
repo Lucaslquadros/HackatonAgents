@@ -60,10 +60,10 @@ arquivo viaja com o template para todo agente novo.
 |---|---|---|---|---|
 | 1 | Agente Enquadrador de Editais | Enquadrar (0-4h) | AC1 — matriz de análise de edital | Em Inception → `agente-enquadrador/` |
 | 2 | Agente de Alinhamento Contínuo | Divergir → Decidir → Construir → Narrar | AC2 (problem framing/discovery) e AC4 (AI Hackathon Stack e plano de validação) | Backlog — Inception próprio ainda não iniciado |
-| 3 | Agente Orquestrador + experiência (porta/pacto/sala) | Toda a jornada (camada visual + gestão do squad) | AC4 (AI Hackathon Stack) / AP2 (Demo Day) | Ideia capturada → `VISAO-EXPERIENCIA.md` — Inception ainda não iniciado |
+| 3 | Agente Orquestrador + experiência (porta/pacto/sala) | Toda a jornada (camada visual + gestão do squad) | AC4 (AI Hackathon Stack) / AP2 (Demo Day) | Em Inception → `agente-orquestrador/` (enxuto: hospeda decisões cross-agent; produto/front-end aguarda o Sistêmico fechar checkpoints) |
 | 4 | Agente de Visão Sistêmica | Entre Enquadrar e Divergir (pode rodar de novo ao longo da jornada) | AC2 (problem framing/discovery) e AC3 (hipóteses) | Em Inception → `agente-sistemico/` |
 | 5 | Triagem Cynefin | Enquadrar → Divergir (decide se o desafio pede mapa sistêmico) | AC2 | Ideia capturada (2026-10-04) — Inception ainda não iniciado |
-| 6 | Agente de Panorama e Priorização | Divergir (início): do tema macro aos problemas candidatos ranqueados | AC2 (problem framing/discovery) | Ideia capturada (2026-10-04) — Inception ainda não iniciado |
+| 6 | Agente de Panorama e Priorização | Divergir (início): do tema macro aos problemas candidatos ranqueados | AC2 (problem framing/discovery) | Em Inception → `agente-panorama/` |
 | 7 | Aba Matriz CSD (registro de evidências) | Toda a jornada | AC2, AC4 (plano de validação) | Decidido (2026-10-04) — Inception ainda não iniciado |
 | 8 | Ritual do fundo do U (presencing conduzido) | Entre Divergir e Decidir | AC2 | Decidido (2026-10-04) — parte do Orquestrador, ver `FLUXO-PEDAGOGICO.md` 5.1 |
 | 9 | Agente de Framing (CSD → POV → HMW) | Decidir | AC2 | Decidido (2026-10-04) — Inception ainda não iniciado |

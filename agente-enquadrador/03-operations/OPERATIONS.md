@@ -16,16 +16,15 @@ subagente `agente-enquadrador` só são descobertos pelo Claude Code quando
 a sessão abre com o diretório de trabalho **dentro de `agente-enquadrador/`**
 (onde mora o `.claude/commands/` e o `.claude/agents/` deste projeto). Uma
 sessão aberta na raiz do repositório `Hack_OS` (ou num worktree dele) não
-enxerga esses arquivos automaticamente. Todos os testes deste agente até
-agora (Bolts 3, 4, 6 e 7) foram feitos com a sessão na raiz do repo — o
-comando de barra nunca foi disparado de verdade, o agente principal seguiu
-manualmente as instruções do prompt de `.claude/agents/agente-enquadrador.md`
-e do comando `.claude/commands/enquadrar.md` para produzir o mesmo
-resultado. O output final bate com o que o subagente real produziria (mesmo
-prompt, mesmas regras), mas o **gatilho determinístico em si** (`/enquadrar`
-como comando de fato registrado) ainda não foi validado na prática. Para
-validar isso, abra uma sessão do Claude Code com `cwd` dentro de
-`agente-enquadrador/` e rode `/enquadrar` de verdade.
+enxerga esses arquivos automaticamente.
+
+Os testes dos Bolts 3, 4, 6 e 7 foram feitos com a sessão na raiz do repo
+(prompt seguido manualmente). Em 2026-10-05 o gatilho determinístico em si
+foi validado à parte: sessão headless (`claude -p`) com `cwd` dentro de
+`agente-enquadrador/`, rodando `/enquadrar` de verdade contra o edital 01 —
+comando descoberto, subagente invocado, saída salva, achados batendo com o
+teste manual. Para rodar de novo assim: abra uma sessão do Claude Code (ou
+`claude -p "/enquadrar <caminho>"`) com `cwd` dentro de `agente-enquadrador/`.
 
 ## Como rodar os testes
 
@@ -72,9 +71,9 @@ omissão — ver Bolt 6):
       declarado no texto") — nos 7 casos
 - [x] Nunca propõe solução de produto/tecnologia, mesmo quando o edital dá
       abertura para isso — nos 7 casos
-- [ ] **Pendente:** validar `/enquadrar` como comando de barra disparado de
-      verdade (não só o prompt seguido manualmente) — precisa de sessão com
-      `cwd` em `agente-enquadrador/`, ver nota em "Como rodar"
+- [x] `/enquadrar` como comando de barra disparado de verdade (não só o
+      prompt seguido manualmente) — validado em 2026-10-05, ver nota em
+      "Como rodar"
 
 ## Changelog
 
@@ -107,3 +106,7 @@ omissão — ver Bolt 6):
 - **2026-08-25** — Bolts 2, 3, 4, 6 e 7 confirmados pelo Lucas (checkpoints
   fechados).
 - **2026-08-25** — Bolt 5: este documento (`OPERATIONS.md`) preenchido.
+- **2026-10-05** — Bolt 5: validado o 8º critério pendente (`/enquadrar`
+  disparado de verdade como comando de barra, sessão headless com `cwd` em
+  `agente-enquadrador/`). Checklist de saúde completo (8/8). Bolt 5 e o
+  Agente Enquadrador fechados — confirmado por Lucas.

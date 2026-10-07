@@ -55,6 +55,11 @@ def textos_da_visao(v):
     yield v.get("pergunta", "")
     if "proposta_seta" in v:
         yield v["proposta_seta"].get("mecanismo", "")
+    if "proposta_rascunho" in v:
+        for var in v["proposta_rascunho"]["variaveis"]:
+            yield var.get("nome", "")
+        for seta in v["proposta_rascunho"]["setas"]:
+            yield seta.get("mecanismo", "")
 
 
 def fonte_do_catalogo(referencia):
@@ -74,6 +79,10 @@ def problemas_de_legibilidade(v, prefixo):
             lista.append(f"{prefixo}: o {campo} mostra o id técnico \"{achado.group(0)}\"; use o nome do elemento (ids só em refs)")
     if "proposta_seta" in v and ID_TECNICO.search(v["proposta_seta"]["mecanismo"]):
         lista.append(f"{prefixo}: o mecanismo da seta proposta mostra id técnico; use nomes")
+    if "proposta_rascunho" in v:
+        for seta in v["proposta_rascunho"]["setas"]:
+            if ID_TECNICO.search(seta["mecanismo"]):
+                lista.append(f"{prefixo}: o mecanismo de uma seta do rascunho mostra id técnico; use nomes")
     if v["pergunta"].count("?") != 1:
         lista.append(f"{prefixo}: a pergunta tem {v['pergunta'].count('?')} interrogações; faça uma pergunta só")
     if len(v["texto"]) > LIMITE_TEXTO:
@@ -98,6 +107,36 @@ def tem_linguagem_de_solucao(texto):
         if achado:
             return achado.group(0)
     return None
+
+
+def problemas_do_rascunho(v, mapa, prefixo):
+    """Rascunho de CLD proposto pelo agente (Bolt 7b)."""
+    lista = []
+    rascunho = v.get("proposta_rascunho")
+    if not rascunho:
+        return lista
+    variaveis_mapa = {var["id"] for var in mapa["variaveis"]}
+    temp_ids = [var["id_temp"] for var in rascunho["variaveis"]]
+    if len(temp_ids) != len(set(temp_ids)):
+        lista.append(f"{prefixo}: ids temporários repetidos no rascunho")
+    conhecidos = variaveis_mapa | set(temp_ids)
+    setas_existentes = {(s["de"], s["para"], s["polaridade"]) for s in mapa["setas"]}
+    vistas_no_rascunho = set()
+    for seta in rascunho["setas"]:
+        de, para = seta["de"], seta["para"]
+        if de not in conhecidos:
+            lista.append(f"{prefixo}: seta do rascunho refere-se a {de}, que não é variável do mapa nem do próprio rascunho")
+        if para not in conhecidos:
+            lista.append(f"{prefixo}: seta do rascunho refere-se a {para}, que não é variável do mapa nem do próprio rascunho")
+        if de == para:
+            lista.append(f"{prefixo}: uma seta do rascunho liga uma variável a ela mesma")
+        chave = (de, para, seta["polaridade"])
+        if chave in setas_existentes:
+            lista.append(f"{prefixo}: uma seta do rascunho repete uma seta que já existe no mapa")
+        if chave in vistas_no_rascunho:
+            lista.append(f"{prefixo}: o rascunho repete a mesma seta duas vezes")
+        vistas_no_rascunho.add(chave)
+    return lista
 
 
 def problemas_da_entrevista(resposta, pedido):
@@ -194,6 +233,7 @@ def problemas(resposta, pedido):
                 lista.append(f"{prefixo}: a seta proposta já existe no mapa")
         if v.get("texto_estacionado", "").strip().lower() in ja_estacionadas:
             lista.append(f"{prefixo}: essa ideia já está no estacionamento")
+        lista.extend(problemas_do_rascunho(v, mapa, prefixo))
         lista.extend(problemas_de_legibilidade(v, prefixo))
         for texto in textos_da_visao(v):
             for padrao in LINGUAGEM_DE_SOLUCAO:

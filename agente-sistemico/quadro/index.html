@@ -19,6 +19,8 @@
     <div class="grupo">
       <button id="btn-variavel" type="button">+ Variável</button>
       <button id="btn-desfazer" type="button" title="Ctrl+Z">Desfazer</button>
+      <button id="btn-ritual" type="button" title="Presencing antes de definir o problema (FLUXO-PEDAGOGICO.md 5.1)">Ritual do fundo do U</button>
+      <button id="btn-panorama" type="button" title="Agente de Panorama: fatos e CSD antes de mapear o sistema">Panorama</button>
     </div>
     <label class="autor">Autor
       <input id="autor" type="text" size="12" pattern="[a-z]+_[a-z0-9_-]+" title="Id do membro no squad.json, ex.: mem_ana">
@@ -56,6 +58,9 @@
   </main>
 
   <footer class="status" id="status"></footer>
+
+  <div class="ritual-overlay" id="ritual-overlay" role="dialog" aria-modal="true" aria-label="Ritual do fundo do U" hidden></div>
+  <div class="ritual-overlay panorama-overlay" id="panorama-overlay" role="dialog" aria-modal="true" aria-label="Panorama" hidden></div>
 
   <script type="module" src="app.js"></script>
 </body>

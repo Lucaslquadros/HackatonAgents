@@ -41,6 +41,9 @@ const BLOCO_DO_PROBLEMA = {
 
 const esc = (t) => String(t ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
+export const ROTULO_STATUS_CSD = { proposto: "Proposto", confirmado: "Confirmado", descartado: "Descartado" };
+const ROTULO_TIPO_CSD = { certeza: "Certeza", suposicao: "Suposição", duvida: "Dúvida" };
+
 // Loops que o squad nomeou ficam em destaque; os demais (inclusive os
 // "combinados", que existem no grafo mas ninguém contou como história)
 // ficam agrupados como "sem nome", do mais curto para o mais longo.
@@ -105,7 +108,8 @@ function htmlFormLoop(l) {
     </div>`;
 }
 
-export function htmlPainel(mapa, validacao, { loopAberto, cynefinDoProjeto } = {}) {
+export function htmlPainel(mapa, validacao, { loopAberto, cynefinDoProjeto, csd } = {}) {
+  const csdItens = csd?.itens || [];
   const { nomeados, semNome, orfas } = organizarLoops(mapa, validacao);
   const todos = [...nomeados, ...semNome];
   const a = mapa.analise;
@@ -159,8 +163,9 @@ export function htmlPainel(mapa, validacao, { loopAberto, cynefinDoProjeto } = {
     <section class="bloco">
       <h3>Bloco 4 · Intervenção</h3>
       <p class="dica">Onde intervir no sistema, não o que construir. Ideias de produto ficam para a ideação.</p>
-      ${mapa.alavancas.length ? `<ul class="alavancas">${mapa.alavancas.map((alv) => htmlAlavanca(mapa, alv, organizarRotulos(todos))).join("")}</ul>` : ""}
-      ${htmlFormAlavanca(mapa, todos)}
+      ${mapa.alavancas.length ? `<ul class="alavancas">${mapa.alavancas.map((alv) => htmlAlavanca(mapa, alv, organizarRotulos(todos), csdItens)).join("")}</ul>` : ""}
+      ${htmlFormAlavanca(mapa, todos, csdItens)}
+      ${htmlCsd(mapa, csdItens)}
     </section>`;
 }
 
@@ -178,7 +183,19 @@ function descreverAlvo(mapa, alvo, rotulos) {
   }).join("; ");
 }
 
-function htmlAlavanca(mapa, alv, rotulos) {
+// Quantas suposições da CSD essa alavanca cita, e quantas já são confirmadas
+// — "em pé de suposição" é literal: alavanca sem nenhuma confirmada ainda
+// não tem chão.
+function resumoSuposicoes(csdItens, alv) {
+  const ids = alv.suposicoes || [];
+  if (!ids.length) return "";
+  const itens = ids.map((id) => csdItens.find((i) => i.id === id)).filter(Boolean);
+  const confirmadas = itens.filter((i) => i.status === "confirmado").length;
+  return `<p class="dica">Depende de ${ids.length} suposiç${ids.length > 1 ? "ões" : "ão"} da CSD
+    (${confirmadas} confirmada${confirmadas === 1 ? "" : "s"}, ${ids.length - confirmadas} ainda não).</p>`;
+}
+
+function htmlAlavanca(mapa, alv, rotulos, csdItens) {
   const nivel = NIVEIS_MEADOWS.find(([v]) => v === alv.nivel_meadows)?.[1] || alv.nivel_meadows;
   return `
     <li class="alavanca">
@@ -186,11 +203,52 @@ function htmlAlavanca(mapa, alv, rotulos) {
       <p class="dica">${esc(nivel)}</p>
       <p>${esc(alv.impacto_esperado)}</p>
       <p class="dica">Teste de sanidade: ${esc(alv.teste_sanidade)}</p>
+      ${resumoSuposicoes(csdItens, alv)}
       <button type="button" class="perigo" data-remover-alavanca="${alv.id}">Remover</button>
     </li>`;
 }
 
-function htmlFormAlavanca(mapa, loops) {
+// Nome de uma variável, ou "A → B" de uma seta — mesma ideia de
+// `descreverAlvo`, mas para a origem de um item da CSD.
+function nomeOuId(mapa, id) {
+  const v = mapa.variaveis.find((x) => x.id === id);
+  if (v) return v.nome;
+  const s = mapa.setas.find((x) => x.id === id);
+  if (s) {
+    const n = (vid) => mapa.variaveis.find((x) => x.id === vid)?.nome || vid;
+    return `${n(s.de)} → ${n(s.para)}`;
+  }
+  return id;
+}
+
+function htmlItemCsd(mapa, item) {
+  const origem = item.origem?.ref ? ` · origem: ${esc(nomeOuId(mapa, item.origem.ref))}` : "";
+  return `
+    <li class="csd-item ${esc(item.status)}">
+      <p class="csd-tipo">${ROTULO_TIPO_CSD[item.tipo] || item.tipo} · ${ROTULO_STATUS_CSD[item.status] || item.status}${origem}</p>
+      <p>${esc(item.texto)}</p>
+      ${item.pergunta_pesquisa ? `<p class="dica">${esc(item.pergunta_pesquisa)}</p>` : ""}
+      ${item.tarefa_discovery ? `<p class="dica">${esc(item.tarefa_discovery)}</p>` : ""}
+      <div class="linha-acoes">
+        ${item.status !== "confirmado" ? `<button type="button" data-csd-status="confirmado" data-csd-id="${item.id}">Confirmar</button>` : ""}
+        ${item.status !== "descartado" ? `<button type="button" data-csd-status="descartado" data-csd-id="${item.id}">Descartar</button>` : ""}
+        ${item.status !== "proposto" ? `<button type="button" class="link" data-csd-status="proposto" data-csd-id="${item.id}">Reabrir como proposto</button>` : ""}
+      </div>
+    </li>`;
+}
+
+function htmlCsd(mapa, csdItens) {
+  return `
+    <details class="csd-painel">
+      <summary>Matriz CSD <span class="contagem">${csdItens.length}</span></summary>
+      <p class="dica">Toda suposição aqui nasceu de uma seta do mapa ou de uma hipótese do agente. O agente só propõe; confirmar ou descartar é do squad.</p>
+      ${csdItens.length
+        ? `<ul class="csd-itens">${csdItens.map((i) => htmlItemCsd(mapa, i)).join("")}</ul>`
+        : `<p class="ok">Nenhum item ainda. Marque uma seta como suposição e proponha para a CSD no inspetor, ou aceite uma hipótese do agente na aba Visões.</p>`}
+    </details>`;
+}
+
+function htmlFormAlavanca(mapa, loops, csdItens) {
   return `
     <details class="nova-alavanca">
       <summary>Nova alavanca</summary>
@@ -210,6 +268,11 @@ function htmlFormAlavanca(mapa, loops) {
       <textarea id="alv-impacto" placeholder="O que muda no comportamento dos loops?"></textarea>
       <label for="alv-sanidade">Teste de sanidade</label>
       <textarea id="alv-sanidade" placeholder="Se aumentarmos X, o sistema melhora ou piora?"></textarea>
+      ${csdItens.filter((i) => i.tipo === "suposicao").length ? `
+        <label for="alv-suposicoes">Depende de quais suposições da CSD? (opcional)</label>
+        <select id="alv-suposicoes" multiple size="3">
+          ${csdItens.filter((i) => i.tipo === "suposicao").map((i) => `<option value="${i.id}">${esc(i.texto)}</option>`).join("")}
+        </select>` : ""}
       <p class="erro" id="alv-erro" role="alert"></p>
       <div class="linha-acoes"><button type="button" id="btn-alavanca">Adicionar alavanca</button></div>
     </details>`;

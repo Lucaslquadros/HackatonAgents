@@ -108,6 +108,33 @@
       "caminho": ["validacao", "loops", 0, "tipo"],
       "valor": "reforco",
       "espera_keyword": "enum"
+    },
+    {
+      "nome": "cluster_sem_elementos",
+      "garantia": "Cluster do Panorama precisa de pelo menos 1 elemento — não existe cluster vazio.",
+      "def": "panorama",
+      "base": "lastmile/panorama.json",
+      "caminho": ["clusters", 0, "elementos"],
+      "valor": [],
+      "espera_keyword": "minItems"
+    },
+    {
+      "nome": "fato_panorama_com_csd_invalida",
+      "garantia": "Classificação CSD de um fato do Panorama só pode ser certeza/suposicao/duvida.",
+      "def": "panorama",
+      "base": "lastmile/panorama.json",
+      "caminho": ["fatos", 0, "classificacao_csd"],
+      "valor": "meio_certo",
+      "espera_keyword": "enum"
+    },
+    {
+      "nome": "membro_area_afinidade_com_nivel_invalido",
+      "garantia": "Nível de afinidade do Cadastro do Time só pode ser experiencia, interesse ou nenhum — não é campo livre.",
+      "def": "squad",
+      "base": "lastmile/squad.json",
+      "caminho": ["membros", 0, "areas_afinidade", 0, "nivel"],
+      "valor": "domina_totalmente",
+      "espera_keyword": "enum"
     }
   ]
 }

@@ -1,7 +1,15 @@
 {
   "hackathon": "Case last-mile (avaliação da aula de pensamento sistêmico)",
   "membros": [
-    { "id": "mem_ana", "nome": "Ana", "frentes": ["dominio_negocio", "narrativa"] },
+    {
+      "id": "mem_ana",
+      "nome": "Ana",
+      "frentes": ["dominio_negocio", "narrativa"],
+      "areas_afinidade": [
+        { "area": "Logística urbana", "nivel": "experiencia", "como_agrega": "2 anos de estágio numa transportadora, entende SLA de entrega." },
+        { "area": "Saúde", "nivel": "nenhum" }
+      ]
+    },
     { "id": "mem_bruno", "nome": "Bruno", "frentes": ["construcao"] },
     { "id": "mem_carla", "nome": "Carla", "frentes": ["dados_evidencias", "experiencia_ux"] }
   ]

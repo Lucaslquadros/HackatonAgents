@@ -11,9 +11,26 @@ com o motor do agente, que nesta versão é uma sessão do Claude Code:
   POST /api/sessoes/<recorte>/estacionamento   grava estacionamento.json
   GET  /api/sessoes/<recorte>/entrevista       histórico da entrevista
   POST /api/sessoes/<recorte>/entrevista       grava entrevista.json
+  GET  /api/sessoes/<recorte>/csd              itens da Matriz CSD
+  POST /api/sessoes/<recorte>/csd              grava csd.json
+  GET  /api/sessoes/<recorte>/ritual           ritual do fundo do U atual
+  POST /api/sessoes/<recorte>/ritual           grava ritual.json
 
-Os arquivos ficam em agente-sistemico/sessoes/<recorte>/. O comando
-/visao-sistemica, rodado no Claude Code, lê o pedido e grava a resposta.
+  GET  /api/panorama   estado do Agente de Panorama (panorama vazio se
+                        ainda não existe)
+  POST /api/panorama   grava panorama.json
+
+  GET  /api/squad      Cadastro do Time (Hack_OS/squad.json, squad vazio
+                        se ainda não existe) — só leitura aqui; quem grava
+                        é o Cadastro do Time (agente-orquestrador/servidor.py).
+                        Usado pelo Bolt 4 do Panorama (apoio à nota de
+                        "aderência ao time" no ranqueamento).
+
+Os arquivos de sessão ficam em agente-sistemico/sessoes/<recorte>/.
+`panorama.json` fica em agente-sistemico/ direto — não é por recorte,
+é um objeto só por squad, que existe antes de qualquer recorte nascer
+(Inception do Agente de Panorama, decisão 13). O comando /visao-sistemica,
+rodado no Claude Code, lê o pedido e grava a resposta.
 
 Só biblioteca padrão. Escuta apenas em 127.0.0.1.
 
@@ -31,13 +48,25 @@ from pathlib import Path
 AQUI = Path(__file__).resolve().parent
 RAIZ = AQUI.parent  # Hack_OS
 SESSOES = AQUI / "sessoes"
-ROTA = re.compile(r"^/api/sessoes/([a-z]+_[a-z0-9_-]{1,60})/(pedido|resposta|estacionamento|entrevista)$")
+PANORAMA_ARQ = AQUI / "panorama.json"
+PANORAMA_VAZIO = {
+    "versao": 1, "cenarios": [], "fatos": [], "clusters": [],
+    "problemas_candidatos": [], "criterios_ranqueamento": [], "ranqueamento": [],
+}
+SQUAD_ARQ = RAIZ / "squad.json"
+SQUAD_VAZIO = {"hackathon": "", "membros": []}
+ROTA = re.compile(r"^/api/sessoes/([a-z]+_[a-z0-9_-]{1,60})/(pedido|resposta|estacionamento|entrevista|csd|ritual)$")
 ID = re.compile(r"^[a-z]+_[a-z0-9_-]+$")
 LIMITE_CORPO = 2 * 1024 * 1024
 # Documentos do squad que o quadro guarda inteiros: arquivo e lista obrigatória.
+# `ritual` também é um objeto completo (não só uma lista), mas já tem uma
+# lista obrigatória própria (`reflexoes`), então serve ao mesmo mecanismo
+# genérico sem código novo.
 DOCUMENTOS = {
     "estacionamento": ("estacionamento.json", "itens"),
     "entrevista": ("entrevista.json", "rodadas"),
+    "csd": ("csd.json", "itens"),
+    "ritual": ("ritual.json", "reflexoes"),
 }
 
 
@@ -86,7 +115,12 @@ class Manipulador(SimpleHTTPRequestHandler):
         self.wfile.write(corpo)
 
     def do_GET(self):
-        rota = ROTA.match(self.path.split("?")[0])
+        caminho = self.path.split("?")[0]
+        if caminho == "/api/panorama":
+            return self.responder_json(HTTPStatus.OK, ler_json(PANORAMA_ARQ) if PANORAMA_ARQ.exists() else PANORAMA_VAZIO)
+        if caminho == "/api/squad":
+            return self.responder_json(HTTPStatus.OK, ler_json(SQUAD_ARQ) if SQUAD_ARQ.exists() else SQUAD_VAZIO)
+        rota = ROTA.match(caminho)
         if not rota:
             return super().do_GET()
         recorte, recurso = rota.groups()
@@ -109,7 +143,20 @@ class Manipulador(SimpleHTTPRequestHandler):
         return self.responder_json(HTTPStatus.ACCEPTED, {"aguardando": pedido["id"]})
 
     def do_POST(self):
-        rota = ROTA.match(self.path.split("?")[0])
+        caminho = self.path.split("?")[0]
+        tamanho_pan = int(self.headers.get("Content-Length") or 0)
+        if caminho == "/api/panorama":
+            if tamanho_pan <= 0 or tamanho_pan > LIMITE_CORPO:
+                return self.responder_json(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, {"erro": "corpo vazio ou grande demais"})
+            try:
+                corpo = json.loads(self.rfile.read(tamanho_pan).decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                return self.responder_json(HTTPStatus.BAD_REQUEST, {"erro": "JSON inválido"})
+            if not isinstance(corpo, dict) or not isinstance(corpo.get("cenarios"), list):
+                return self.responder_json(HTTPStatus.BAD_REQUEST, {"erro": "panorama precisa ter a lista 'cenarios'"})
+            gravar_json(PANORAMA_ARQ, corpo)
+            return self.responder_json(HTTPStatus.OK, {"cenarios": len(corpo["cenarios"]), "fatos": len(corpo.get("fatos", []))})
+        rota = ROTA.match(caminho)
         if not rota or rota.group(2) == "resposta":
             return self.responder_json(HTTPStatus.NOT_FOUND, {"erro": "rota inexistente"})
         recorte, recurso = rota.groups()

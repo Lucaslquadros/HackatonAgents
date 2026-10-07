@@ -140,4 +140,15 @@ suficiente pra justificar ainda).
   toolkit pré-hackathon — inclusive decidir se a limitação do `/enquadrar`
   (comando nunca disparado de verdade) precisa virar um bolt novo antes
   disso, ou se pode ficar registrada como limitação conhecida por agora.
-- **Status:** checkpoint — aguardando confirmação do Lucas
+- **Teste de verdade (2026-10-05):** disparado `/enquadrar` como comando de
+  barra de fato — não mais seguido manualmente — numa sessão headless do
+  Claude Code (`claude -p`) com `cwd` dentro de `agente-enquadrador/`,
+  contra `01-ufc-tjce-hackathon-2026.pdf`. O comando foi descoberto, invocou
+  o subagente `agente-enquadrador` de verdade e salvou o resultado em
+  `saidas/01-ufc-tjce-hackathon-2026.md`. Achados reproduzidos
+  (critérios sem peso, cronograma de ~8 semanas em vez de 48h) batem com o
+  teste manual do Bolt 3 — confirma que o mecanismo real funciona, não só o
+  prompt seguido à mão. Saída de teste descartada (`git checkout`) para não
+  substituir a versão já revisada por Lucas sem necessidade.
+  **8º critério de aceite agora também objetivamente validado.**
+- **Status:** feito — confirmado por Lucas em 05/10/2026

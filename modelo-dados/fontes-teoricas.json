@@ -1,9 +1,9 @@
 {
   "descricao": "Catálogo dos conceitos das aulas que uma visão do agente pode citar em fonte_teorica (com suplementar: false). A referência deve começar pelo rótulo exato; pode acrescentar um detalhe depois de dois-pontos (ex.: \"Arquétipos sistêmicos: soluções que falham\"). 'tipos' lista os tipos de visão para os quais o conceito faz sentido. Usado pelo prompt do agente e pelo validar_resposta.py.",
   "fontes": [
-    { "rotulo": "CLD: variáveis, setas e mecanismo", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "validacao_relacao", "visao_ausente"] },
-    { "rotulo": "CLD: atrasos", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "validacao_relacao", "visao_ausente", "alavanca"] },
-    { "rotulo": "CLD: loops de reforço e balanceamento", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "visao_ausente", "validacao_relacao", "intervencao_programada"] },
+    { "rotulo": "CLD: variáveis, setas e mecanismo", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "validacao_relacao", "visao_ausente", "rascunho_mapa"] },
+    { "rotulo": "CLD: atrasos", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "validacao_relacao", "visao_ausente", "alavanca", "rascunho_mapa"] },
+    { "rotulo": "CLD: loops de reforço e balanceamento", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "visao_ausente", "validacao_relacao", "intervencao_programada", "rascunho_mapa"] },
     { "rotulo": "Arquétipos sistêmicos", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["conexao_sugerida", "visao_ausente", "validacao_relacao", "alavanca", "intervencao_programada"] },
     { "rotulo": "Meadows, pontos de alavancagem", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["alavanca", "visao_ausente", "intervencao_programada"] },
     { "rotulo": "Iceberg: eventos, padrões, estrutura, modelos mentais", "aula": "DT, pensamento sistêmico (17/08)", "tipos": ["visao_ausente", "validacao_relacao"] },

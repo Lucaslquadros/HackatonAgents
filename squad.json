@@ -1,0 +1,38 @@
+{
+  "hackathon": "Time A",
+  "membros": [
+    {
+      "id": "mem_1",
+      "nome": "Joao",
+      "frentes": [
+        "construcao",
+        "experiencia_ux",
+        "narrativa"
+      ],
+      "areas_afinidade": [
+        {
+          "area": "Ambiental",
+          "nivel": "experiencia",
+          "como_agrega": "Analises de sensoriamento remoto"
+        }
+      ]
+    },
+    {
+      "id": "mem_2",
+      "nome": "Lucas Quadros",
+      "frentes": [
+        "dominio_negocio",
+        "dados_evidencias",
+        "experiencia_ux",
+        "narrativa"
+      ],
+      "areas_afinidade": [
+        {
+          "area": "Juridica",
+          "nivel": "experiencia",
+          "como_agrega": "Entendimento de regulação"
+        }
+      ]
+    }
+  ]
+}

@@ -53,6 +53,44 @@ test("mudarStatus: dispensar guarda o motivo; reabrir apaga", () => {
   assert.equal("motivo_recusa" in v[0], false);
 });
 
+test("montarPedido: csd só vai no pedido quando tem item; nunca vazia", () => {
+  const mapa = normalizar(ler("mapa.json"));
+  const semCsd = montarPedido(mapa, validarMapa(mapa), [], { csd: { itens: [] } });
+  assert.equal("csd" in semCsd, false);
+  const comCsd = montarPedido(mapa, validarMapa(mapa), [], { csd: { itens: [{ id: "csd_01" }] } });
+  assert.deepEqual(comCsd.csd, { itens: [{ id: "csd_01" }] });
+});
+
+test("montarPedido: ritual só vai no pedido depois de encerrado (Bolt 9)", () => {
+  const mapa = normalizar(ler("mapa.json"));
+  const aberto = { id: "rit_01", recorte: mapa.recorte, pergunta_generativa: "O que te surpreendeu?", duracao_min: 5, aberto_em: "2026-10-05T10:00:00-03:00", reflexoes: [] };
+  const semRitual = montarPedido(mapa, validarMapa(mapa), [], { ritual: aberto });
+  assert.equal("ritual" in semRitual, false);
+  const encerrado = { ...aberto, encerrado_em: "2026-10-05T10:06:00-03:00" };
+  const comRitual = montarPedido(mapa, validarMapa(mapa), [], { ritual: encerrado });
+  assert.deepEqual(comRitual.ritual, encerrado);
+});
+
+test("htmlVisoes: hipótese com proposta_csd mostra o texto proposto e o botão de aceitar para a CSD", () => {
+  const mapa = normalizar(ler("mapa.json"));
+  const visoes = mesclarVisoes([], {
+    pedido: "ped_1",
+    visoes: [{
+      id: "vis_h", tipo: "hipotese", texto: "A capacidade real nunca foi medida.",
+      pergunta: "Qual a capacidade real de entrega por praça?", refs: ["var_carga"],
+      fonte_teorica: { referencia: "Matriz CSD", suplementar: false }, status: "aberta",
+      proposta_csd: {
+        id: "csd_01", tipo: "suposicao", texto: "Capacidade real desconhecida", autor: "agente",
+        criado_em: "2026-10-05T10:00:00-03:00", status: "proposto",
+        origem: { etapa: "mapa_sistemico" }, evidencias: [], pergunta_pesquisa: "Qual é a capacidade real?",
+      },
+    }],
+  });
+  const html = htmlVisoes(mapa, visoes, { motor: "pronto" });
+  assert.match(html, /Item proposto para a CSD: Capacidade real desconhecida/);
+  assert.match(html, /data-visao-acao="aceitar_item_csd" data-chave="ped_1:vis_h"/);
+});
+
 test("htmlVisoes: cada estado do motor tem sua mensagem e o texto do agente é escapado", () => {
   const mapa = normalizar(ler("mapa.json"));
   const visoes = mesclarVisoes([], {

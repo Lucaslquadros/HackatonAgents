@@ -28,9 +28,11 @@ export function normalizar(dado) {
   return mapa;
 }
 
-export function proximoId(mapa, prefixo, largura = 0) {
+// `extras` deixa gerar ids de uma lista que não mora dentro do mapa (ex.: a
+// Matriz CSD, que no contrato é irmã do mapa dentro do pedido, não filha).
+export function proximoId(mapa, prefixo, largura = 0, extras = []) {
   const usados = new Set([
-    ...mapa.atores, ...mapa.variaveis, ...mapa.setas, ...mapa.alavancas,
+    ...mapa.atores, ...mapa.variaveis, ...mapa.setas, ...mapa.alavancas, ...extras,
   ].map((x) => x.id));
   let maior = 0;
   for (const id of usados) {
@@ -186,7 +188,10 @@ export function atualizarAnalise(mapa, campos) {
   }
 }
 
-export function adicionarAlavanca(mapa, { alvo, nivel_meadows, impacto_esperado, teste_sanidade, autor }) {
+// `csdItens` é a lista de itens da Matriz CSD (vive fora do mapa, ver nota
+// no Bolt 8 do BOLTS.md) — só serve aqui para não guardar uma suposição que
+// não existe mais.
+export function adicionarAlavanca(mapa, { alvo, nivel_meadows, impacto_esperado, teste_sanidade, autor, suposicoes }, csdItens = []) {
   const faltando = [];
   if (!alvo?.refs?.length) faltando.push("onde intervir");
   if (!nivel_meadows) faltando.push("nível de Meadows");
@@ -201,6 +206,9 @@ export function adicionarAlavanca(mapa, { alvo, nivel_meadows, impacto_esperado,
     teste_sanidade: teste_sanidade.trim(),
     autor,
   };
+  const existentes = new Set(csdItens.map((i) => i.id));
+  const validas = [...new Set(suposicoes || [])].filter((id) => existentes.has(id));
+  if (validas.length) alavanca.suposicoes = validas;
   mapa.alavancas.push(alavanca);
   return alavanca;
 }
@@ -227,6 +235,91 @@ export function aceitarConexao(mapa, proposta) {
 
 export function aceitarVariavel(mapa, proposta, posicao) {
   return adicionarVariavel(mapa, { nome: proposta.nome, tipo: proposta.tipo, posicao, autor: "agente" });
+}
+
+// ---------- rascunho de CLD proposto pelo agente (Bolt 7b) ----------
+// Mesma garantia do Bolt 5, por item: nada entra no mapa sem o squad
+// aceitar. `mapaTemp` liga cada id_temp do rascunho (ainda não existe no
+// mapa) à variável real já criada a partir dele.
+
+export function ehIdTemporario(ref) {
+  return ref.startsWith("tmp_");
+}
+
+export function aceitarSetaRascunho(mapa, proposta, mapaTemp) {
+  const resolver = (ref) => (ehIdTemporario(ref) ? mapaTemp[ref] : ref);
+  const de = resolver(proposta.de);
+  const para = resolver(proposta.para);
+  if (!de || !para) throw new Error("Adicione as variáveis desta seta antes de aceitá-la.");
+  return aceitarConexao(mapa, { de, para, polaridade: proposta.polaridade, atraso: proposta.atraso, mecanismo: proposta.mecanismo });
+}
+
+// ---------- Matriz CSD (Bolt 8) ----------
+// No contrato (hackos.schema.json), `csd` é irmã do `mapa` dentro do
+// pedido/resposta, não um campo do mapa — por isso essas funções recebem um
+// `csd` (`{ itens: [] }`) à parte, do mesmo jeito que `estacionar()` recebe
+// o `estacionamento`. O agente só propõe ("proposto"); quem confirma ou
+// descarta é o squad. Duas origens de proposta: uma seta marcada como
+// suposição pelo próprio squad no quadro (proporSetaParaCsd), ou uma visão
+// `hipotese` do agente (aceitarItemCsd, que só registra o item pronto que
+// já veio na resposta).
+
+export function novoCsd() {
+  return { itens: [] };
+}
+
+export function proporItemCsd(csd, mapa, { tipo, texto, autor, origem, pergunta_pesquisa, tarefa_discovery, agora }) {
+  const limpo = (texto || "").trim();
+  if (!limpo) throw new Error("Escreva o texto do item antes de propor.");
+  if (tipo === "suposicao" && !pergunta_pesquisa?.trim()) throw new Error("Toda suposição precisa de uma pergunta de pesquisa.");
+  if (tipo === "duvida" && !tarefa_discovery?.trim()) throw new Error("Toda dúvida precisa de uma tarefa de discovery.");
+  const item = {
+    id: proximoId(mapa, "csd", 2, csd.itens),
+    tipo,
+    texto: limpo,
+    autor,
+    criado_em: agora,
+    status: "proposto",
+    origem,
+    evidencias: [],
+  };
+  if (pergunta_pesquisa?.trim()) item.pergunta_pesquisa = pergunta_pesquisa.trim();
+  if (tarefa_discovery?.trim()) item.tarefa_discovery = tarefa_discovery.trim();
+  csd.itens.push(item);
+  return item;
+}
+
+// Uma seta já é, em si, uma suposição não verificada (classificacao
+// "suposicao"); propor para a CSD é só dar a ela o tratamento de evidência
+// que a aba CSD exige: pergunta de pesquisa e um status que o squad decide.
+export function proporSetaParaCsd(csd, mapa, setaId, { pergunta_pesquisa, autor, agora }) {
+  const seta = mapa.setas.find((s) => s.id === setaId);
+  if (!seta) throw new Error("Seta não encontrada.");
+  if (seta.classificacao !== "suposicao") throw new Error("Só setas marcadas como suposição podem virar item da CSD.");
+  if (seta.csd_item) throw new Error("Essa seta já está na Matriz CSD.");
+  const nome = (id) => mapa.variaveis.find((v) => v.id === id)?.nome || id;
+  const texto = `${nome(seta.de)} → ${nome(seta.para)}: ${seta.mecanismo || "(sem mecanismo ainda)"}`;
+  const item = proporItemCsd(csd, mapa, {
+    tipo: "suposicao", texto, autor, pergunta_pesquisa, agora,
+    origem: { etapa: "mapa_sistemico", ref: setaId },
+  });
+  seta.csd_item = item.id;
+  return item;
+}
+
+// Visão `hipotese` do agente: o item já vem pronto em `proposta_csd`
+// (id, criado_em e status "proposto" definidos pelo próprio agente); aceitar
+// só registra na CSD, sem recriar nada.
+export function aceitarItemCsd(csd, propostaCsd) {
+  if (csd.itens.some((i) => i.id === propostaCsd.id)) throw new Error("Esse item já está na Matriz CSD.");
+  const item = { ...propostaCsd };
+  csd.itens.push(item);
+  return item;
+}
+
+export function mudarStatusItemCsd(csd, id, status) {
+  const item = csd.itens.find((i) => i.id === id);
+  if (item) item.status = status;
 }
 
 // ---------- estacionamento (parking lot do Lean Inception) ----------

@@ -10,6 +10,17 @@
       "pattern": "^[a-z]+_[a-z0-9_-]+$",
       "description": "Identificador com prefixo do tipo: var_, seta_, ator_, csd_, mem_, vis_, ref_, rit_, est_, glo_, alv_, ped_."
     },
+    "id_temp": {
+      "type": "string",
+      "pattern": "^tmp_[a-z0-9_-]+$",
+      "description": "Id provisório de uma variável do rascunho (Bolt 7b), só existe dentro da mesma proposta; vira um id_ de verdade quando o squad aceita."
+    },
+    "id_ou_temp": {
+      "anyOf": [
+        { "$ref": "#/$defs/id" },
+        { "$ref": "#/$defs/id_temp" }
+      ]
+    },
     "autor": {
       "description": "Id de um membro do squad, ou 'agente' quando a origem é a IA.",
       "anyOf": [
@@ -69,6 +80,20 @@
           "type": "array",
           "uniqueItems": true,
           "items": { "enum": ["dominio_negocio", "construcao", "experiencia_ux", "dados_evidencias", "narrativa"] }
+        },
+        "areas_afinidade": {
+          "description": "Afinidade com áreas/categorias do tema ou edital em avaliação (Agente de Panorama, 'aderência ao time'). 'area' é texto livre, não enum fixo, porque categorias variam a cada edital.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["area", "nivel"],
+            "properties": {
+              "area": { "$ref": "#/$defs/texto_curto" },
+              "nivel": { "enum": ["experiencia", "interesse", "nenhum"] },
+              "como_agrega": { "$ref": "#/$defs/texto" }
+            }
+          }
         }
       }
     },
@@ -219,6 +244,112 @@
       "required": ["x", "y"],
       "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
     },
+
+    "cenario": {
+      "description": "Agente de Panorama: um tema ou categoria de edital em avaliação (Inception, decisões 1 e 10). Um panorama pode ter vários cenários abertos ao mesmo tempo, comparados no ranqueamento.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nome"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "nome": { "$ref": "#/$defs/texto_curto" },
+        "descricao": { "$ref": "#/$defs/texto" },
+        "atores": { "type": "array", "items": { "$ref": "#/$defs/ator" } }
+      }
+    },
+    "fato_panorama": {
+      "description": "Um cartão de fato do Passo 1 (Inception, decisão 1.1): sempre com evidência (fonte+data) ou marcado como estimativa, e classificado na Matriz CSD (decisão 11).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "cenario", "texto", "evidencia", "classificacao_csd", "autor"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "cenario": { "$ref": "#/$defs/id" },
+        "texto": { "$ref": "#/$defs/texto" },
+        "evidencia": { "$ref": "#/$defs/evidencia" },
+        "classificacao_csd": { "$ref": "#/$defs/classificacao_csd" },
+        "autor": { "$ref": "#/$defs/autor" },
+        "criado_em": { "$ref": "#/$defs/data_hora" }
+      }
+    },
+    "cluster": {
+      "description": "Agrupamento por relação, não por área (decisão 12 — squad monta primeiro, agente critica depois). 'elementos' referencia ids de fato_panorama ou de ator.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "cenario", "nome", "elementos"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "cenario": { "$ref": "#/$defs/id" },
+        "nome": { "$ref": "#/$defs/texto_curto" },
+        "elementos": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } }
+      }
+    },
+    "problema_candidato": {
+      "description": "Passo 3 do funil (Inception, decisão 1.3): pergunta-problema com magnitude e fonte, construído sobre fatos já classificados — não antes da CSD (decisão 11).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "cenario", "pergunta_problema", "magnitude", "fontes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "cenario": { "$ref": "#/$defs/id" },
+        "pergunta_problema": { "$ref": "#/$defs/texto" },
+        "magnitude": { "$ref": "#/$defs/texto" },
+        "fontes": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/id" } },
+        "cluster_origem": { "$ref": "#/$defs/id" }
+      }
+    },
+    "criterio_ranqueamento": {
+      "description": "Passo 4 (Inception, decisão 1.4): magnitude, centralidade sistêmica, alavancagem alcançável, tratabilidade, aderência ao edital e aderência ao time são os critérios de referência do ROADMAP — pesos são sempre definidos pelo squad, o agente não escolhe.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "nome", "peso"],
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "nome": { "$ref": "#/$defs/texto_curto" },
+        "peso": { "type": "number", "minimum": 0 }
+      }
+    },
+    "nota_ranqueamento": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["problema", "criterio", "nota"],
+      "properties": {
+        "problema": { "$ref": "#/$defs/id" },
+        "criterio": { "$ref": "#/$defs/id" },
+        "nota": { "type": "number", "minimum": 0, "maximum": 10 },
+        "justificativa": { "$ref": "#/$defs/texto" }
+      }
+    },
+    "finalista_panorama": {
+      "description": "Contrato de saída do Inception: o problema escolhido sai pronto para popular mapa.contexto + atores[] de uma sessão nova do Agente de Visão Sistêmica, pulando a 1ª rodada da entrevista dele.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["problema", "tema", "pergunta_problema", "atores"],
+      "properties": {
+        "problema": { "$ref": "#/$defs/id" },
+        "tema": { "$ref": "#/$defs/texto_curto" },
+        "pergunta_problema": { "$ref": "#/$defs/texto" },
+        "fronteira": { "$ref": "#/$defs/texto" },
+        "atores": { "type": "array", "items": { "$ref": "#/$defs/ator" } },
+        "fonte_enquadrador": { "type": "string" }
+      }
+    },
+    "panorama": {
+      "description": "Objeto de topo do Agente de Panorama e Priorização — um por squad (Inception, decisão 7: tudo na mesma sessão, do 1º fato ao finalista).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["versao", "cenarios", "fatos", "clusters", "problemas_candidatos", "criterios_ranqueamento", "ranqueamento"],
+      "properties": {
+        "versao": { "const": 1 },
+        "cenarios": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/cenario" } },
+        "fatos": { "type": "array", "items": { "$ref": "#/$defs/fato_panorama" } },
+        "clusters": { "type": "array", "items": { "$ref": "#/$defs/cluster" } },
+        "problemas_candidatos": { "type": "array", "items": { "$ref": "#/$defs/problema_candidato" } },
+        "criterios_ranqueamento": { "type": "array", "items": { "$ref": "#/$defs/criterio_ranqueamento" } },
+        "ranqueamento": { "type": "array", "items": { "$ref": "#/$defs/nota_ranqueamento" } },
+        "finalista": { "$ref": "#/$defs/finalista_panorama" }
+      }
+    },
     "variavel": {
       "type": "object",
       "additionalProperties": false,
@@ -341,6 +472,40 @@
           "items": { "$ref": "#/$defs/id" }
         },
         "autor": { "$ref": "#/$defs/autor" }
+      }
+    },
+    "variavel_rascunho": {
+      "description": "Bolt 7b: variável nova que o agente propõe dentro de um rascunho de CLD. Só existe como provisória; o squad decide item a item (botão 'Adicionar' no quadro) antes de ela virar uma variável de verdade.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id_temp", "nome", "tipo"],
+      "properties": {
+        "id_temp": { "$ref": "#/$defs/id_temp" },
+        "nome": { "$ref": "#/$defs/texto_curto" },
+        "tipo": { "enum": ["neutra", "problema", "resultado"] }
+      }
+    },
+    "seta_rascunho": {
+      "description": "Bolt 7b: seta de um rascunho de CLD. `de`/`para` podem apontar para uma variável que já existe no mapa ou para um id_temp do mesmo rascunho. Sempre suposição: o rascunho é hipótese a derrubar, nunca fato.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["de", "para", "polaridade", "atraso", "mecanismo"],
+      "properties": {
+        "de": { "$ref": "#/$defs/id_ou_temp" },
+        "para": { "$ref": "#/$defs/id_ou_temp" },
+        "polaridade": { "enum": ["+", "-"] },
+        "atraso": { "type": "boolean" },
+        "mecanismo": { "$ref": "#/$defs/texto" }
+      }
+    },
+    "rascunho_mapa": {
+      "description": "Bolt 7b: primeiro rascunho de CLD proposto pelo agente depois que a pergunta-problema está definida. Desenhado tracejado no quadro; o squad aceita ou recusa cada variável e cada seta, uma de cada vez — nada entra no mapa sozinho.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["variaveis", "setas"],
+      "properties": {
+        "variaveis": { "type": "array", "minItems": 1, "maxItems": 12, "items": { "$ref": "#/$defs/variavel_rascunho" } },
+        "setas": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/seta_rascunho" } }
       }
     },
     "mapa": {
@@ -637,7 +802,7 @@
       "properties": {
         "id": { "$ref": "#/$defs/id" },
         "tipo": {
-          "enum": ["conexao_sugerida", "visao_ausente", "validacao_relacao", "intervencao_programada", "alavanca", "hipotese", "estacionar", "cobertura_ritual"]
+          "enum": ["conexao_sugerida", "visao_ausente", "validacao_relacao", "intervencao_programada", "alavanca", "hipotese", "estacionar", "cobertura_ritual", "rascunho_mapa"]
         },
         "texto": { "$ref": "#/$defs/texto" },
         "pergunta": {
@@ -672,6 +837,10 @@
           "description": "Item proposto para a aba CSD (o squad confirma).",
           "$ref": "#/$defs/item_csd"
         },
+        "proposta_rascunho": {
+          "description": "Só em rascunho_mapa: ver $defs/rascunho_mapa.",
+          "$ref": "#/$defs/rascunho_mapa"
+        },
         "nivel_meadows": { "$ref": "#/$defs/nivel_meadows" },
         "texto_estacionado": { "$ref": "#/$defs/texto" },
         "status": { "enum": ["aberta", "aceita", "recusada", "respondida"] },
@@ -693,6 +862,10 @@
         {
           "if": { "properties": { "tipo": { "const": "hipotese" } } },
           "then": { "required": ["proposta_csd"] }
+        },
+        {
+          "if": { "properties": { "tipo": { "const": "rascunho_mapa" } } },
+          "then": { "required": ["proposta_rascunho"] }
         }
       ]
     },

@@ -78,3 +78,19 @@ compartilhado; o terceiro, o servidor e o validador da resposta do agente
   Primeiras execuções reais guardadas em `02-construction/execucoes-agente/`.
 - **2026-10-05** — Bolt 7: entrevista em rodadas na aba Visões, do tema
   até a proposta de pergunta-problema, fronteira e horizonte.
+- **2026-10-05** — Bolt 7b: rascunho de CLD proposto pelo agente (variáveis
+  e setas provisórias, suposição, aceite item a item).
+- **2026-10-05** — Bolt 8: integração com a Matriz CSD — setas-suposição e
+  hipóteses do agente podem ser propostas como item da CSD; painel mostra
+  de quantas suposições cada alavanca depende.
+- **2026-10-05** — Bolt 9: ritual do fundo do U — painel oculto, cronômetro,
+  reflexão individual sequencial, revelação com cobertura por membro,
+  divergências e envio de perguntas para a CSD.
+- **2026-10-05** — Bolt 10: testes de aceite do Inception rodados contra os
+  6 critérios (gabaritos da aula, Energisa com dois recortes reais, descrição
+  pobre, erros plantados, nenhuma frase de solução, front-matter sem
+  Write/Edit). Todos passaram; achado de taxa de falha do prompt em domínio
+  novo (Energisa) registrado no `BOLTS.md` para decisão do Lucas.
+- Bolts 7, 7b, 8, 9 e 10 estão em **checkpoint** (implementados e testados,
+  aguardando revisão/validação manual do Lucas) — não confundir com
+  `feito`. Ver `02-construction/BOLTS.md` para o detalhe de cada um.

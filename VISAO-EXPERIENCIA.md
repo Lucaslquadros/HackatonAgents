@@ -1,8 +1,12 @@
 # Visão de experiência — Porta, Pacto e Sala dos Agentes
 
-> **Status:** ideia de produto capturada, ainda sem Inception própria aberta.
-> Vira a seção `Objetivo`/`Contexto` de um Inception de verdade quando o
-> ciclo do Agente Orquestrador (+ front-end) começar — ver `ROADMAP.md`.
+> **Status (2026-10-05):** Inception aberta em
+> `agente-orquestrador/01-inception/INCEPTION.md` — mas de propósito
+> enxuta (hospeda decisões cross-agent por enquanto; Construction do
+> produto/front-end descrito aqui ainda aguarda o gate original: o
+> Sistêmico fechar seus checkpoints pendentes). Este arquivo continua
+> sendo a fonte da visão de produto; o Inception referencia, não
+> duplica.
 
 ## A ideia (registrada em 2026-08-24, nas palavras do Lucas)
 

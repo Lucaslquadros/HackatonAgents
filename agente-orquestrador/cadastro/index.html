@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cadastro do Time</title>
+  <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+  <header class="barra">
+    <strong class="marca">Cadastro do Time</strong>
+    <button id="btn-membro" type="button">+ Integrante</button>
+    <button id="btn-salvar" type="button" class="primario">Salvar</button>
+  </header>
+
+  <main>
+    <nav class="abas" id="abas" role="tablist" aria-label="Seções do Cadastro do Time">
+      <button type="button" role="tab" id="aba-cadastro" aria-controls="painel-cadastro" aria-selected="true">Cadastro</button>
+      <button type="button" role="tab" id="aba-visao" aria-controls="painel-visao" aria-selected="false">Visão da equipe</button>
+    </nav>
+
+    <div id="painel-cadastro" role="tabpanel" aria-labelledby="aba-cadastro" class="painel-conteudo">
+      <p class="dica">
+        Passo 0 da jornada: um cadastro só, preenchido uma vez pelo squad —
+        não por categoria/cenário. O Agente de Panorama usa isso depois para
+        calcular "aderência ao time" no ranqueamento.
+      </p>
+
+      <div class="cartao campo">
+        <label for="hackathon">Hackathon</label>
+        <input id="hackathon" type="text" placeholder="ex.: Campus Mobile 2026 — 15ª edição">
+      </div>
+
+      <p id="contador-membros" class="texto-suave"></p>
+      <div id="membros"></div>
+
+      <div id="avisos" class="avisos" hidden>
+        <strong>Antes de salvar, repare:</strong>
+        <ul></ul>
+      </div>
+
+      <div id="pendencias" class="pendencias" hidden>
+        <strong>Antes de salvar:</strong>
+        <ul></ul>
+      </div>
+
+      <div class="rodape-acoes">
+        <button id="btn-salvar-rodape" type="button" class="primario">Salvar</button>
+        <span id="status" class="status"></span>
+      </div>
+    </div>
+
+    <div id="painel-visao" role="tabpanel" aria-labelledby="aba-visao" class="painel-conteudo" hidden></div>
+  </main>
+
+  <template id="tpl-membro">
+    <div class="cartao membro" data-membro>
+      <div class="membro-titulo">
+        <span class="membro-numero" data-numero>Integrante</span>
+        <button type="button" class="perigo botao-remover-membro" data-acao="remover-membro">🗑 Remover integrante</button>
+      </div>
+      <div class="membro-cabecalho">
+        <input type="text" data-campo="nome" placeholder="Nome do integrante">
+      </div>
+
+      <div class="campo">
+        <label>Frentes (Aula 3)</label>
+        <div class="frentes">
+          <label><input type="checkbox" data-frente="dominio_negocio"> Domínio de negócio</label>
+          <label><input type="checkbox" data-frente="construcao"> Construção</label>
+          <label><input type="checkbox" data-frente="experiencia_ux"> Experiência/UX</label>
+          <label><input type="checkbox" data-frente="dados_evidencias"> Dados/evidências</label>
+          <label><input type="checkbox" data-frente="narrativa"> Narrativa</label>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Áreas de afinidade (categorias do edital/tema em avaliação)</label>
+        <div class="areas" data-areas></div>
+        <button type="button" data-acao="adicionar-area">+ Área de afinidade</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="tpl-area">
+    <div class="area-linha" data-area-linha>
+      <input type="text" data-campo="area" placeholder="Nome da área (ex.: Green Tech &amp; Agtech)">
+      <select data-campo="nivel">
+        <option value="interesse">Interesse</option>
+        <option value="experiencia">Experiência</option>
+        <option value="nenhum">Nenhum</option>
+      </select>
+      <input type="text" data-campo="como_agrega" placeholder="Como pode agregar (opcional)">
+      <button type="button" class="perigo" data-acao="remover-area">×</button>
+    </div>
+  </template>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "hackos-cadastro",
+  "private": true,
+  "type": "module",
+  "description": "Cadastro do Time do Agente Orquestrador (sem dependências).",
+  "scripts": {
+    "test": "node --test \"testes/*.test.js\""
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "versao": 1,
+  "cenarios": [
+    {
+      "id": "cen_greentech",
+      "nome": "Green Tech & Agtech (Campus Mobile 2026)",
+      "descricao": "Categoria do edital: projetos que melhorem a vida de habitantes de regiões rurais e suas atividades econômicas (agropecuária, turismo ecológico, extrativismo sustentável), uso racional de recursos naturais e redução de riscos de mudanças climáticas.",
+      "atores": [
+        { "id": "ator_pequeno_produtor", "nome": "Pequeno produtor rural", "papeis": ["sofre", "opera"] },
+        { "id": "ator_cooperativa", "nome": "Cooperativa agrícola local", "papeis": ["decide", "opera"] },
+        { "id": "ator_extensao_rural", "nome": "Serviço de extensão rural (ex.: EMATER)", "papeis": ["regula", "opera"] }
+      ]
+    }
+  ],
+  "fatos": [
+    {
+      "id": "fat_01",
+      "cenario": "cen_greentech",
+      "texto": "O edital exige obrigatoriamente o uso de telefonia móvel na solução proposta (celular ou outra plataforma que use rede móvel).",
+      "evidencia": {
+        "tipo": "fonte_publica",
+        "descricao": "Regulamento 15ª edição, item 2.5",
+        "referencia": "editais-referencia/07-campus-mobile-15-edicao-2026.md",
+        "contem_dado_pessoal": false
+      },
+      "classificacao_csd": "certeza",
+      "autor": "agente",
+      "criado_em": "2026-10-06T09:00:00-03:00"
+    },
+    {
+      "id": "fat_02",
+      "cenario": "cen_greentech",
+      "texto": "Produtores rurais de pequena escala costumam ter cobertura de internet móvel instável ou só 2G/3G em boa parte do Brasil.",
+      "evidencia": {
+        "tipo": "estimativa",
+        "descricao": "Conhecimento geral do squad sobre conectividade rural; não verificado com fonte oficial para a região específica ainda a definir.",
+        "contem_dado_pessoal": false
+      },
+      "classificacao_csd": "suposicao",
+      "autor": "mem_ana",
+      "criado_em": "2026-10-06T09:05:00-03:00"
+    },
+    {
+      "id": "fat_03",
+      "cenario": "cen_greentech",
+      "texto": "Qual a taxa real de adoção de apps agrícolas por pequenos produtores (vs. médios/grandes) no Brasil?",
+      "evidencia": {
+        "tipo": "estimativa",
+        "descricao": "Nenhum dado levantado ainda — fica como dúvida de pesquisa, não suposição.",
+        "contem_dado_pessoal": false
+      },
+      "classificacao_csd": "duvida",
+      "autor": "mem_ana",
+      "criado_em": "2026-10-06T09:07:00-03:00"
+    }
+  ],
+  "clusters": [
+    {
+      "id": "clu_conectividade",
+      "cenario": "cen_greentech",
+      "nome": "Conectividade e acesso no campo",
+      "elementos": ["fat_01", "fat_02", "ator_pequeno_produtor"]
+    },
+    {
+      "id": "clu_intermediacao",
+      "cenario": "cen_greentech",
+      "nome": "Quem decide e quem opera a adoção",
+      "elementos": ["ator_cooperativa", "ator_extensao_rural", "fat_03"]
+    }
+  ],
+  "problemas_candidatos": [
+    {
+      "id": "prob_offline",
+      "cenario": "cen_greentech",
+      "pergunta_problema": "Por que soluções móveis agrícolas pensadas para conectividade constante falham em chegar ao pequeno produtor rural, dado que boa parte da área rural brasileira tem só 2G/3G instável?",
+      "magnitude": "Estimativa aberta: proporção de municípios rurais brasileiros sem 4G estável — fonte a levantar antes de avançar.",
+      "fontes": ["fat_01", "fat_02"],
+      "cluster_origem": "clu_conectividade"
+    },
+    {
+      "id": "prob_confianca_coop",
+      "cenario": "cen_greentech",
+      "pergunta_problema": "Por que a adoção de ferramentas digitais por pequenos produtores depende mais da recomendação da cooperativa/extensão rural do que do produtor decidir sozinho?",
+      "magnitude": "Não quantificado — hipótese a validar com a dúvida fat_03 antes de assumir como causa.",
+      "fontes": ["fat_03"],
+      "cluster_origem": "clu_intermediacao"
+    }
+  ],
+  "criterios_ranqueamento": [
+    { "id": "crit_magnitude", "nome": "Magnitude do problema", "peso": 2 },
+    { "id": "crit_aderencia_edital", "nome": "Aderência ao edital (critério Impacto, peso 3 na Etapa 2)", "peso": 3 },
+    { "id": "crit_aderencia_time", "nome": "Aderência ao time (Cadastro do Time)", "peso": 3 }
+  ],
+  "ranqueamento": [
+    { "problema": "prob_offline", "criterio": "crit_magnitude", "nota": 7 },
+    { "problema": "prob_offline", "criterio": "crit_aderencia_edital", "nota": 8, "justificativa": "Ataca diretamente o requisito de telefonia móvel em região de conectividade ruim." },
+    { "problema": "prob_offline", "criterio": "crit_aderencia_time", "nota": 6 },
+    { "problema": "prob_confianca_coop", "criterio": "crit_magnitude", "nota": 5 },
+    { "problema": "prob_confianca_coop", "criterio": "crit_aderencia_edital", "nota": 6 },
+    { "problema": "prob_confianca_coop", "criterio": "crit_aderencia_time", "nota": 4 }
+  ],
+  "finalista": {
+    "problema": "prob_offline",
+    "tema": "Green Tech & Agtech (Campus Mobile 2026)",
+    "pergunta_problema": "Por que soluções móveis agrícolas pensadas para conectividade constante falham em chegar ao pequeno produtor rural, dado que boa parte da área rural brasileira tem só 2G/3G instável?",
+    "fronteira": "Entre a solução técnica proposta e a infraestrutura de rede real da região de atuação do produtor — não inclui política pública de telecomunicações.",
+    "atores": [
+      { "id": "ator_pequeno_produtor", "nome": "Pequeno produtor rural", "papeis": ["sofre", "opera"] },
+      { "id": "ator_cooperativa", "nome": "Cooperativa agrícola local", "papeis": ["decide", "opera"] }
+    ],
+    "fonte_enquadrador": "agente-enquadrador/saidas/07-campus-mobile-15-edicao-2026.md"
+  }
+}

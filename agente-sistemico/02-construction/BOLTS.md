@@ -205,6 +205,17 @@ desenvolvimento, não código que o squad roda.
 - **Defeito achado e corrigido:** o filtro de log do servidor quebrava ao
   registrar um erro 404 e derrubava a conexão (pego pelo teste do caminho
   com `..`, que em si ficou contido na pasta do projeto).
+- **Novo teste de verdade do comando (2026-10-05):** disparado
+  `/visao-sistemica rec_lastmile` como comando de barra de fato numa sessão
+  headless do Claude Code (`claude -p`) com `cwd` dentro de
+  `agente-sistemico/`, contra o pedido de exemplo do last-mile (copiado
+  para um recorte `rec_lastmile` temporário em `sessoes/`). O comando achou
+  o pedido, invocou o subagente `agente-sistemico` de verdade, validou a
+  resposta de primeira (`validar_resposta.py`) e gravou
+  `resposta-visao.json`: 3 visões (2 `visao_ausente`, 1 `cobertura_ritual`).
+  Confirma que o mecanismo comando→subagente→validação→arquivo funciona
+  ponta a ponta fora de uma sessão interativa. Recorte de teste removido
+  depois (não é dado real do squad).
 
 ## Bolt 5 — Setas fantasma e estacionamento
 
@@ -344,27 +355,404 @@ desenvolvimento, não código que o squad roda.
 - **Contrato:** a resposta ganha um bloco de rascunho com variáveis
   provisórias (ids temporários) e setas que podem ligar variáveis novas ou
   existentes.
-- **Status:** todo
+- **Checkpoint:** Lucas revisa o desenho abaixo — em especial a decisão de
+  design do "recusar seta" sem motivo (nº 2) e o limite de 1 rascunho aberto
+  por vez (nº 4) — e testa um rascunho de verdade pelo quadro antes de
+  aprovar.
+- **Status:** checkpoint — aguardando revisão do Lucas
+- **Resultado (2026-10-05):**
+  - **Contrato** (`modelo-dados/hackos.schema.json`): novo `$def` `id_temp`
+    (padrão `tmp_<algo>`, só existe dentro de uma proposta) e `id_ou_temp`;
+    `variavel_rascunho` (`id_temp`, `nome`, `tipo`); `seta_rascunho` (como
+    uma seta normal, mas sem `classificacao` — o rascunho inteiro já é
+    suposição por definição, e `de`/`para` aceitam tanto um id real quanto
+    um `id_temp` do mesmo rascunho); `rascunho_mapa` (`variaveis`: 1 a 12,
+    `setas`: mínimo 1). Novo tipo de visão `rascunho_mapa` +
+    `proposta_rascunho`, exigido por `allOf` como os outros tipos.
+  - **Validador** (`modelo-dados/validar_resposta.py`,
+    `problemas_do_rascunho`): ids temporários únicos dentro do rascunho;
+    toda seta refere-se a uma variável do mapa ou a um `id_temp` do próprio
+    rascunho (nunca a nada fora dos dois); sem auto-laço; sem repetir uma
+    seta que já existe no mapa; sem repetir a mesma seta duas vezes dentro
+    do rascunho. Reaproveitadas as guardas de legibilidade (id técnico no
+    mecanismo, linguagem de solução no nome da variável ou no mecanismo) —
+    bastou ligar `proposta_rascunho` em `textos_da_visao` e
+    `problemas_de_legibilidade`. Catálogo de fontes
+    (`fontes-teoricas.json`): `rascunho_mapa` passou a combinar com "CLD:
+    variáveis, setas e mecanismo", "CLD: atrasos" e "CLD: loops de reforço
+    e balanceamento" — sem isso toda resposta real seria recusada por fonte
+    incompatível com o tipo.
+  - **Quadro** — mesmo padrão do Bolt 5 (setas fantasma), generalizado para
+    um conjunto de itens em vez de um item avulso:
+    - `estado.js`: `aceitarSetaRascunho(mapa, proposta, mapaTemp)` resolve
+      `de`/`para` através de `mapaTemp` (id_temp → id real já criado) e
+      delega para `aceitarConexao` — mesma garantia de sempre nascer
+      suposição, autor `agente`. `aceitarVariavel` já existente é
+      reaproveitado sem mudança para criar a variável real a partir de uma
+      `variavel_rascunho` (mesmo formato `{nome, tipo}`).
+    - `visoes.js`: cartão do rascunho lista cada variável com botão
+      "Adicionar" (vira variável real, registra o mapeamento id_temp→id em
+      `v.mapaTemp`) e cada seta com "Aceitar esta seta"/"Recusar" — só
+      liberados quando as duas pontas já foram resolvidas (variável real ou
+      id_temp já adicionado); antes disso mostra "Adicione as variáveis
+      desta seta primeiro". Seta aceitável mostra a mesma prévia de loops
+      novos do Bolt 5 (`htmlPrevia`/`preverConexao`, reaproveitados sem
+      mudança). `mapaTemp` e `decisoesSetas` (o que foi aceito/recusado,
+      por índice) são campos só do quadro — `paraContrato` os tira antes de
+      mandar a visão de volta no próximo pedido.
+    - `app.js`: setas do rascunho cujas duas pontas já são reais entram na
+      mesma lista de "fantasmas" tracejados desenhados no quadro
+      (reaproveita a classe CSS `.sugerida`, sem CSS novo para o SVG);
+      clicar nelas abre o cartão, como as conexões sugeridas do Bolt 5.
+      Três ações novas no handler de cliques:
+      `rascunho_adicionar_var`/`rascunho_aceitar_seta`/`rascunho_recusar_seta`.
+    - `estilo.css`: `.itens-rascunho`/`.item-rascunho` (lista de itens no
+      painel, estilo "ideias" do estacionamento) e `.visao.rascunho_mapa`
+      no destaque lateral (mesma cor do `conexao_sugerida`).
+  - **Prompt do subagente** (`.claude/agents/agente-sistemico.md`): nova
+    seção "Rascunho do CLD (Bolt 7b)" — quando propor (pergunta-problema
+    definida, mapa ainda com poucas variáveis ou nenhum loop), formato do
+    bloco, regra de 6 a 12 variáveis, só suposição, não propor um novo
+    rascunho enquanto houver um aberto. Regra 6 ("não invente sistema")
+    passou a cobrir os dois casos: sem pergunta-problema → entrevista; com
+    pergunta-problema mas mapa pobre → rascunho.
+  - **Testes:** 9 novos em JavaScript
+    (`agente-sistemico/quadro/testes/rascunho.test.js`: situação da seta
+    conforme a resolução das pontas, aceitar com/sem variáveis resolvidas,
+    inicialização de `mapaTemp`/`decisoesSetas` pelo `mesclarVisoes`,
+    `paraContrato` não vaza os dois campos internos, HTML do cartão em cada
+    estado) e 7 em Python (`agente-sistemico/testes/test_motor.py`:
+    rascunho válido, ids temporários repetidos, seta para variável
+    inexistente, seta repetindo uma do mapa, seta repetida dentro do
+    próprio rascunho, id técnico no mecanismo, variável/mecanismo com
+    linguagem de solução). Suíte completa depois da mudança: 74/74 em
+    JavaScript (`npm test` em `agente-sistemico/quadro/`), 39/39 em Python
+    (`python -m unittest agente-sistemico.testes.test_motor`, rodado da
+    raiz do `Hack_OS`) e `python modelo-dados/testes/validar_exemplos.py`
+    sem regressão.
+  - **Não testado ainda:** um rascunho gerado pelo agente real (só
+    exercitado com fixtures manuais nos testes); `modelo-dados/exemplos/invalidos/casos.json`
+    não ganhou um caso de rascunho inválido (a cobertura desse tipo de erro
+    ficou só no `test_motor.py`) — decisão de escopo para não alongar o
+    bolt, não falta técnica.
+  - **Decisões de design que merecem seu olhar:**
+    1. **Setas do rascunho não aparecem tracejadas no quadro até as duas
+       pontas existirem de verdade.** Se o rascunho propõe 6 variáveis
+       novas conectadas entre si, nada aparece no canvas até o squad clicar
+       "Adicionar" variável por variável no painel — só a lista de itens no
+       painel mostra tudo de uma vez. Alternativa seria desenhar as
+       variáveis provisórias no canvas (como "fantasmas", estilo `.var
+       .fantasma` que já existe no CSS) antes de qualquer aceite; não fiz
+       isso porque settar a posição de uma variável que ainda não existe
+       exigiria inventar um layout, e decidir isso sozinho pareceu
+       passar do escopo deste bolt.
+    2. **Recusar uma seta do rascunho não pede motivo** (diferente da
+       recusa de uma `conexao_sugerida` no Bolt 5, que abre um campo de
+       texto). Ganho de simplicidade; perda é o agente não saber por que
+       uma seta específica foi recusada na próxima rodada. Dá para alinhar
+       com o Bolt 5 depois, se fizer falta.
+    3. **Variável não tem "recusar" explícito** — se o squad não clica
+       "Adicionar", ela simplesmente nunca entra no mapa quando o cartão é
+       fechado. Pareceu desnecessário ter um terceiro estado para algo que
+       já é "não fiz nada".
+    4. **O prompt pede no máximo 1 `rascunho_mapa` aberto por vez**, mas
+       isso só está escrito no prompt (comportamento do modelo), não
+       garantido pelo validador — diferente das outras garantias mecânicas
+       deste projeto. Dava para o validador recusar uma segunda proposta de
+       rascunho enquanto a primeira segue aberta; não implementei por não
+       ter certeza de que é isso que você quer (ex.: e se o squad quiser
+       dois rascunhos de recortes diferentes ao mesmo tempo?).
 
 ## Bolt 8 — Integração com a Matriz CSD
 
 - **Objetivo:** setas e hipóteses viram itens propostos na CSD; o painel
   mostra de quantas suposições uma alavanca depende.
-- **Status:** todo
+- **Checkpoint:** Lucas revisa as decisões de design abaixo (em especial a
+  nº 1, sobre certezas ficarem fora deste bolt) e testa o fluxo pelo quadro
+  antes de aprovar.
+- **Status:** checkpoint — aguardando revisão do Lucas
+- **Correção de modelagem no meio do caminho:** a primeira versão guardava
+  `csd` dentro do `mapa` (`mapa.csd.itens`). Conferindo o contrato
+  (`hackos.schema.json`), `csd` é **irmã** do `mapa` dentro do
+  `pedido_visao`/`resposta_visao` — o `$def` de `mapa` tem
+  `additionalProperties: false` e não lista `csd`, então a versão errada
+  quebraria o "Salvar" (o quadro grava `JSON.stringify(mapa)` direto como
+  `mapa.json`) assim que houvesse qualquer item na CSD. Corrigido antes de
+  terminar o bolt: `csd` agora é um pedaço de estado do quadro à parte,
+  igual a `estacionamento`, com seu próprio arquivo (`csd.json`), endpoint
+  no servidor e chave no `localStorage`. O teste já existente
+  `montarPedido: só visões abertas vão ao agente...` (Bolt 4) — que confere
+  as chaves do pedido contra `pedido_visao.properties` — ajudou a confirmar
+  a correção.
+- **Resultado (2026-10-05):**
+  - **`estado.js`:** `novoCsd()`, `proporItemCsd(csd, mapa, {...})` (cria
+    item `proposto`, exige `pergunta_pesquisa` em suposição e
+    `tarefa_discovery` em dúvida), `proporSetaParaCsd(csd, mapa, setaId,
+    {...})` (só para setas `classificacao: "suposicao"` sem `csd_item`
+    ainda; liga `seta.csd_item` ao item criado), `aceitarItemCsd(csd,
+    propostaCsd)` (registra o item já pronto que veio de uma visão
+    `hipotese`), `mudarStatusItemCsd(csd, id, status)`. `proximoId` ganhou
+    um 4º parâmetro (`extras`) para gerar ids únicos de uma lista que não
+    mora dentro do mapa. `adicionarAlavanca` ganhou `suposicoes` (filtra
+    para só os ids que existem de fato na lista de CSD recebida).
+  - **`painel.js`:** nova seção "Matriz CSD" no Bloco 4 (Intervenção),
+    com cada item (tipo, status, origem pelo nome da seta/variável,
+    pergunta de pesquisa ou tarefa de discovery) e botões
+    Confirmar/Descartar/Reabrir. Cada alavanca mostra "Depende de N
+    suposições da CSD (X confirmadas, Y ainda não)". O formulário de nova
+    alavanca ganhou um seletor múltiplo opcional com as suposições da CSD.
+  - **`visoes.js`:** visão `hipotese` com `proposta_csd` mostra o texto e o
+    botão "Aceitar para a CSD" (em vez do genérico "Discutimos e
+    respondemos").
+  - **`app.js`:** seta suposição sem `csd_item` ganha, no inspetor, um
+    campo "Propor esta suposição para a Matriz CSD" (pede a pergunta de
+    pesquisa, obrigatória pelo schema); com `csd_item`, mostra o status
+    atual. Novo estado `csd` (módulo), persistido como
+    `estacionamento`/`entrevista`: `localStorage` por recorte +
+    sincronização com o servidor ao abrir o quadro.
+  - **`servidor.py`:** rota `GET/POST /api/sessoes/<recorte>/csd` (arquivo
+    `csd.json`), mesmo mecanismo genérico de `estacionamento`/`entrevista`.
+  - **Prompt do subagente:** a instrução de `hipotese` + `proposta_csd` não
+    pedia `id`/`criado_em`, embora o schema exija os dois (`item_csd` tem
+    `required: [id, ..., criado_em, ...]`) — toda hipótese do agente seria
+    recusada pelo validador. Corrigido: o prompt agora pede `id`
+    (`"csd_<curto>"`) e `criado_em` (a mesma data-hora da resposta).
+  - **Testes:** 14 novos em JavaScript (7 em `estado.test.js`: propor seta,
+    recusar seta-certeza, exigir pergunta/tarefa, geração de id sem
+    colisão, aceitar/duplicar item, mudar status, alavanca filtrando
+    suposições inválidas; 4 em `painel.test.js`: CSD vazia, listagem com
+    escape e origem pelo nome, resumo por alavanca, filtro de tipo no
+    formulário; 2 em `visoes.test.js`: `montarPedido` só inclui `csd` não
+    vazia, cartão da hipótese) e 5 em Python (`test_motor.py`: hipótese com
+    `proposta_csd` completa passa, falta de `id` ou `pergunta_pesquisa` é
+    recusada pelo schema, ida-e-volta do endpoint `/csd` do servidor).
+    Suíte completa: 88/88 em JavaScript (`npm test`), 43/43 em Python
+    (`python -m unittest agente-sistemico.testes.test_motor`, da raiz do
+    `Hack_OS`) e `python modelo-dados/testes/validar_exemplos.py` sem
+    regressão.
+  - **Não testado ainda:** o fluxo pelo navegador de verdade (abrir o
+    quadro, marcar uma seta como suposição, propor para a CSD, aceitar uma
+    hipótese do agente, criar uma alavanca com suposições) — só testado via
+    as funções puras e a geração de HTML. Falta também gerar uma hipótese
+    de verdade com o agente real e confirmar que `/visao-sistemica` grava
+    `id`/`criado_em` do jeito que o prompt agora pede.
+  - **Decisões de design que merecem seu olhar:**
+    1. **Só suposição entra na CSD por este bolt — certeza não.** O
+       `item_csd` tipo `certeza` exige `evidencias` com pelo menos um item
+       (fonte, link, data), e isso pede uma tela de anexar evidência que
+       não existe ainda; implementá-la pareceu um bolt próprio. Hoje uma
+       seta `certeza` não ganha nenhum botão de CSD no inspetor.
+    2. **Nada é proposto para a CSD automaticamente.** Nem toda seta
+       suposição vira item sozinha, nem aceitar uma visão `hipotese` sem
+       clicar "Aceitar para a CSD" entra no registro — mesmo princípio dos
+       Bolts 5/7b ("nada muda sem o squad decidir"), mas significa que o
+       squad pode esquecer de propor uma seta e ela nunca aparecer na CSD.
+    3. **Apagar uma seta não remove o item da CSD que ela gerou.** O item
+       fica no registro com `origem.ref` apontando para um id que não
+       existe mais (mostra o id cru em vez do nome, no painel). Decisão:
+       evidência registrada não deveria sumir só porque o mapa mudou depois
+       — mas pode confundir se isso acontecer com frequência.
+    4. **Proponho a seta para a CSD não está no histórico de desfazer
+       (Ctrl+Z).** Igual a estacionar uma ideia: Ctrl+Z desfaz mudanças no
+       `mapa` (inclusive o `seta.csd_item` que foi setado), mas o item já
+       criado em `csd.itens` continua lá, agora órfão. Mesmo trade-off do
+       item 3, só que por um caminho diferente.
 
 ## Bolt 9 — Ritual do fundo do U (um dispositivo)
 
 - **Objetivo:** painel oculto, cronômetro, entradas individuais
   ("ocultar e passar"), botão "Terminamos nossa reflexão", revelação e
   cobertura por membro.
-- **Status:** todo
+- **Contrato:** nenhum novo — o bloco `ritual` já existia no schema desde o
+  Bolt 0 (`FLUXO-PEDAGOGICO.md` 5.1); este bolt só constrói o dispositivo no
+  quadro que o produz e consome. Mecânico, sem chamar o subagente/LLM.
+- **Checkpoint:** Lucas testa o ritual de ponta a ponta pelo navegador (abrir,
+  3+ reflexões, encerrar, ligar ao mapa, uma divergência, uma pergunta
+  enviada para a CSD, reabrir o painel) e revisa as decisões de design
+  abaixo — em especial a nº 1 (ligação manual, não automática).
+- **Status:** checkpoint — aguardando revisão do Lucas
+- **Resultado (2026-10-05):**
+  - **`agente-sistemico/quadro/ritual.js`** (novo, no padrão de
+    `entrevista.js`: funções puras + HTML, rede e eventos em `app.js`):
+    `abrirRitual` (exige pergunta generativa, 3–15 min, recusa "qual é a
+    solução?"), `enviarReflexao` (recusa texto vazio e linguagem de solução
+    — mesmas frases do `LINGUAGEM_DE_SOLUCAO` do validador Python, adaptadas
+    para o que o squad digita), `encerrarReflexoes` (exige 1+ reflexão,
+    guarda `seguiu_sem`), `ligarAoMapa`, `registrarDivergencia`,
+    `enviarReflexaoParaCsd` (só reflexão tipo `pergunta`, reusa
+    `proporItemCsd` do Bolt 8 com `origem.etapa: "ritual_u"` — já previsto
+    no catálogo `etapa` do schema), `ritualParaPedido` (tira os campos
+    internos do quadro) e `htmlRitual` com as 5 telas do dispositivo.
+  - **`app.js`:** estado `ritual` (local + servidor, mesmo padrão de
+    `estacionamento`/`csd`), overlay de tela cheia (`#ritual-overlay`) que
+    cobre o quadro inteiro — inclusive a aba Visões, que fica "oculta" por
+    estar coberta, não por ter o DOM escondido à parte. Um `setInterval`
+    próprio atualiza só o texto do cronômetro a cada segundo, sem redesenhar
+    o formulário (perderia o que a pessoa está digitando) — mesmo cuidado de
+    "digitando" que já existia no inspetor/painel.
+  - **`visoes.js`:** `montarPedido` ganhou a opção `ritual`, incluída no
+    pedido só quando `encerrado_em` está presente (mandar um ritual ainda em
+    reflexão individual não serve a nenhum gatilho do contrato).
+  - **`servidor.py`:** rota `ritual` adicionada ao mecanismo genérico que já
+    servia `estacionamento`/`entrevista`/`csd` — `ritual.json` tem uma lista
+    obrigatória própria (`reflexoes`), então não precisou de código novo,
+    só entrar no dicionário `DOCUMENTOS` e no regex de rotas.
+  - **Index/CSS:** botão "Ritual do fundo do U" na barra, overlay com tema
+    claro/escuro reaproveitando as variáveis de cor existentes.
+  - **Testes:** 11 novos em JavaScript (`testes/ritual.test.js`: heurística
+    de linguagem de solução, abertura com as 3 validações, envio de
+    reflexão, encerramento, ligação ao mapa, divergência, envio para a CSD,
+    `ritualParaPedido` tirando campos internos e validando contra
+    `$defs/ritual` do schema campo a campo, e um teste de fumaça das 5 telas
+    de HTML conferindo que o texto do squad é escapado; mais 1 em
+    `visoes.test.js` para o novo parâmetro de `montarPedido`) e 1 em Python
+    (`test_motor.py`: ida e volta do endpoint `/ritual`, igual ao padrão já
+    usado para `/csd`/`/entrevista`). Suíte completa: 99/99 em JavaScript
+    (`npm test`), 44/44 em Python (`python -m unittest
+    agente-sistemico.testes.test_motor`, da raiz do `Hack_OS`) e `python
+    modelo-dados/testes/validar_exemplos.py` sem regressão.
+  - **Não testado ainda:** o fluxo completo pelo navegador de verdade (só
+    testado via as funções puras, o teste de fumaça do HTML, e o endpoint do
+    servidor) — abrir o ritual, passar o dispositivo entre "membros"
+    simulados, encerrar, ligar reflexões a elementos do mapa pelo
+    `<select>`, registrar uma divergência e mandar uma pergunta para a CSD.
+  - **Decisões de design que merecem seu olhar:**
+    1. **Ligar uma reflexão a um elemento do mapa é manual, não automático.**
+       O squad escolhe num `<select multiple>` (atores, variáveis, loops
+       nomeados); não há busca por palavra-chave nem qualquer heurística de
+       "palpite". Fiel ao "o squad decide" do projeto e ao fato de este
+       bolt não ter LLM, mas significa mais cliques no momento da revelação.
+    2. **Loop vira a lista de setas dele, não um id próprio.** O contrato
+       (`$defs/id`, padrão `prefixo_algo`) não tem um id de loop — a chave
+       de um loop é o conjunto ordenado de setas. Escolher a opção "Loop: R1"
+       no `<select>` grava todas as setas daquele loop em `elementos`. Único
+       jeito de respeitar o schema sem inventar um novo tipo de id.
+    3. **"Ocultar e passar" é sequencial num dispositivo só** (o squad passa
+       o mesmo notebook/tablet de mão em mão), não multiplayer de verdade
+       (várias pessoas em abas/aparelhos diferentes ao mesmo tempo). O
+       quadro continua sendo single-user local em todo o resto; não criei
+       nenhuma sincronização nova só para o ritual.
+    4. **O cronômetro é um só para toda a rodada de reflexão** (3–15 min no
+       total, não por pessoa) — é como o exemplo last-mile do Bolt 0 já
+       registrava (`duracao_min: 5` cobrindo 3 reflexões) e como a dinâmica
+       "U em Miniatura" da disciplina é descrita. Esgotar o tempo só muda a
+       cor do aviso; não bloqueia novos envios nem força o encerramento —
+       quem decide que terminou é o botão, não o relógio.
+    5. **Marcar "ausente do mapa" é um botão à parte, não só deixar o
+       `<select>` vazio e salvar.** Evita confundir "ainda não fiz essa
+       etapa" com "decidi que não está no mapa" — os dois são estados
+       diferentes no painel (pendente vs. ausente), mas só o segundo é
+       uma pergunta real `presente_no_mapa: false` no contrato.
 
 ## Bolt 10 — Testes de aceite do Inception
 
 - **Objetivo:** rodar os critérios de aceite (gabaritos da aula, Energisa
   com dois recortes, descrição pobre, erros plantados, nenhuma frase de
   solução de produto).
-- **Status:** todo
+- **Checkpoint:** Lucas revisa o resultado de cada um dos 6 critérios abaixo
+  — em especial o achado do critério 2 (taxa de falha do prompt em domínio
+  novo) — e decide se algum merece um bolt de correção antes de fechar o
+  agente.
+- **Status:** checkpoint — aguardando revisão do Lucas
+- **Resultado (2026-10-05):** os 6 critérios do Inception, um por um:
+  1. **Gabaritos da disciplina — passou.** A detecção de loops (Suporte,
+     Loja Alfa, Nexa Pay, exercício 2 a–g, last-mile) já está coberta pelos
+     28 testes do Bolt 1, ainda passando dentro da suíte de 99. Quanto à
+     parte específica do last-mile ("o painel leva o squad a concluir que
+     'os entregadores precisam ser mais rápidos' é hipótese, não causa"):
+     confirmado que `seta_09` (Velocidade exigida → Tempo médio) está
+     `classificacao: "suposicao"` no exemplo canônico, e que o inspetor de
+     seta em `app.js` (linhas ~636–641) renderiza o rádio "Suposição"
+     marcado para ela — distinto de "Certeza" — então clicar nessa seta no
+     quadro mostra explicitamente que é hipótese. Verificado por leitura de
+     código, não por um teste automatizado novo (não há harness de DOM
+     para `app.js` na suíte hoje; criar um só para isto pareceu
+     desproporcional ao bolt).
+  2. **Edital real — Ideathon Energisa com dois recortes — passou, com um
+     achado relevante sobre confiabilidade do prompt.** Montei dois pedidos
+     de teste grounded no edital real (`agente-enquadrador/saidas/06-ideathon-energisa-2026.md`
+     e no texto original, item 5.2): `rec_energisa_urbano` (ligações
+     clandestinas e pipas, loop B balanceador com atraso) e
+     `rec_energisa_rural` (colisão de veículo → poste caído → cabo no
+     solo → tempo de resposta, loop R de reforço com atraso) — dois
+     sistemas estruturalmente diferentes a partir do mesmo desafio central
+     do edital. Disparei `/visao-sistemica` de verdade (sessão headless,
+     `cwd` em `agente-sistemico/`) para os dois:
+     - **Rural:** 1ª rodada (com a correção interna de uma tentativa)
+       recusada duas vezes (id técnico no texto, depois texto longo); 2ª
+       rodada (comando disparado de novo, do zero) passou de primeira: 3
+       visões (`visao_ausente` sobre a ausência de loop balanceador,
+       `validacao_relacao` questionando a hipótese de exposição,
+       `alavanca` de nível meta sobre SLA de tempo de resposta).
+     - **Urbano:** 1ª rodada recusada duas vezes (id técnico + texto
+       longo); 2ª rodada recusada de novo, duas vezes, só por texto longo
+       (459 e 451 caracteres, pouco acima do limite de 450) — essa
+       tentativa foi interrompida por um limite de uso da sessão antes de
+       terminar a correção. 3ª rodada (de novo do zero, após o limite
+       resetar) passou de primeira: 3 visões (`visao_ausente` sobre a
+       causa raiz das ligações clandestinas, `validacao_relacao`
+       questionando se fiscalização de fato reduz ligações, 
+       `intervencao_programada` sobre o loop solto do uso de pipas).
+     - **Achado real, não só sucesso:** em domínio novo (Energisa, nunca
+       testado antes — diferente do last-mile/bicicleta já exercitados
+       nos Bolts 4/6/7), o prompt **falhou a validação em 2 de 2 primeiras
+       tentativas independentes**, quase sempre por estourar o limite de
+       450 caracteres (uma vez por poucos caracteres). Só emendou depois
+       de tentativas extras fora do orçamento normal de 1 correção por
+       chamada do comando. Isso sugere que o limite de tamanho do prompt é
+       mais apertado do que a margem real do modelo em textos sobre um
+       domínio que ele não viu antes — vale o Lucas decidir se isso pede
+       um bolt de ajuste (ex.: subir o limite, ou reforçar no prompt para
+       contar caracteres antes de responder) ou se cai dentro da margem
+       aceitável de "2ª tentativa resolve".
+     - Os dois mapas finais são **comparáveis**: mesma estrutura de 4
+       variáveis + 4 setas + 1 loop por recorte, mesmo desafio central do
+       edital, mas um loop B (urbano) contra um loop R (rural), e visões
+       que respondem ao que cada recorte tem de específico — não há
+       conteúdo genérico repetido entre os dois.
+     - Pares de pedido/resposta arquivados em
+       `execucoes-agente/energisa-urbano_*.json` e `energisa-rural_*.json`;
+       pastas de sessão de teste (`sessoes/rec_energisa_*`) removidas.
+  3. **Descrição pobre — passou (evidência já existente, não repeti o
+     teste).** O teste "só o tema" do Bolt 7 (mobilidade por bicicleta em
+     São Paulo) já cobre exatamente este critério: `informacao_insuficiente:
+     true` e o agente devolveu perguntas de entrevista em vez de desenhar
+     um mapa.
+  4. **Modo crítica (erros plantados) — passou.** Peguei o `mapa.json` do
+     last-mile e plantei 3 erros: (a) `var_carga` renomeada para "Reduzir a
+     carga por entregador" (verbo); (b) `meta`/`lacuna` removidos do loop
+     B1 anotado; (c) o loop B2 (1 negativa, deveria ser B) com `tipo`
+     forçado para `"R"` em `validacao.loops`, contradizendo o próprio nome
+     "B2 · Limite do crescimento" que o squad deu a ele. Resultado:
+     - Os erros (a) e (b) são pegos **mecanicamente** pelo
+       `validador.js` já existente, sem precisar do agente: rodei
+       `validarMapa` direto contra este mapa e confirmei os códigos
+       `nome_com_verbo_ou_direcao` (ref `var_carga`) e `b_sem_meta` (refs
+       `seta_07`/`08`/`09`) nos `problemas` retornados.
+     - O erro (c) — que exige julgamento, não só contagem — foi pego pelo
+       **agente real**: a primeira das 3 visões geradas
+       (`vis_loop_b2_tipo`, tipo `validacao_relacao`) aponta exatamente a
+       contradição entre o loop ser nomeado "B2 · Limite do crescimento" e
+       a validação computada classificá-lo como R, citando a mesma conta
+       de 1 seta negativa que classificou corretamente o B1.
+     - Pedido/resposta arquivados em `execucoes-agente/criticar-erros_*.json`.
+  5. **Nenhuma frase de solução — passou.** Busquei por padrões de
+     solução ("vocês poderiam", "construir um app", "fazer um app", etc.)
+     nos 9 textos de visão gerados pelos 3 testes reais deste bolt (3 do
+     Energisa urbano, 3 do rural, 3 do modo crítica): nenhuma ocorrência.
+     Mecanismo mecânico de guarda (`problemas_de_legibilidade` em
+     `validar_resposta.py`, desde o Bolt 6) continua ativo e sem mudança.
+  6. **Front-matter sem Write/Edit — passou.** `tools: Read, Grep, Glob`
+     em `.claude/agents/agente-sistemico.md` — confirmado, sem mudança
+     necessária.
+  - **Suíte depois do bolt:** 99/99 JavaScript, 44/44 Python e
+    `validar_exemplos.py` sem regressão — idêntico ao início do bolt
+    (nenhum código de produção foi alterado, só fixtures de teste geradas
+    e depois arquivadas/limpas).
+  - **Fora de escopo, achado à parte:** a pasta `sessoes/rec_lastmile/`
+    ficou com `csd.json`/`estacionamento.json`/`ritual.json` de um teste de
+    um bolt anterior (7b/8/9) que não foi limpo — não é deste bolt, não
+    toquei nela, mas fica registrado para você decidir se quer apagar.
 
 ## Próximas rodadas (fora deste backlog)
 

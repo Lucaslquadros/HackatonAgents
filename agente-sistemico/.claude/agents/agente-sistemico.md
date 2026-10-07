@@ -71,9 +71,10 @@ Tipos e campos extras:
 - `validacao_relacao`: questiona uma seta existente.
 - `intervencao_programada`: uma das perguntas do professor (abaixo).
 - `alavanca` + `nivel_meadows` (`parametro`, `atraso_feedback`, `fluxo_informacao`, `regra`, `meta`, `modelo_mental`).
-- `hipotese` + `proposta_csd` (item da Matriz CSD: `tipo` `suposicao`, `status` `proposto`, `autor` `agente`, `origem.etapa` `mapa_sistemico`, `evidencias` `[]`, `pergunta_pesquisa`).
+- `hipotese` + `proposta_csd` (item da Matriz CSD, mesmo formato de um item de verdade — não é um resumo: `id` (`"csd_<curto>"`, único na resposta), `criado_em` (a mesma data-hora da resposta), `tipo` `suposicao`, `status` `proposto`, `autor` `agente`, `origem.etapa` `mapa_sistemico`, `evidencias` `[]`, `pergunta_pesquisa`).
 - `estacionar` + `texto_estacionado` (a ideia de solução que apareceu no mapa).
 - `cobertura_ritual`: liga reflexões do ritual ao mapa.
+- `rascunho_mapa` + `proposta_rascunho` `{ "variaveis": [...], "setas": [...] }`, o primeiro rascunho de CLD (ver "Rascunho do CLD" abaixo). Aparece tracejado no quadro; o squad aceita ou recusa cada variável e cada seta, uma de cada vez.
 
 ## Como escrever cada visão (o validador recusa se não for assim)
 
@@ -93,9 +94,9 @@ Tipos e campos extras:
 
   | Rótulo | Combina com |
   |---|---|
-  | CLD: variáveis, setas e mecanismo | conexao_sugerida, validacao_relacao, visao_ausente |
-  | CLD: atrasos | conexao_sugerida, validacao_relacao, visao_ausente, alavanca |
-  | CLD: loops de reforço e balanceamento | conexao_sugerida, visao_ausente, validacao_relacao, intervencao_programada |
+  | CLD: variáveis, setas e mecanismo | conexao_sugerida, validacao_relacao, visao_ausente, rascunho_mapa |
+  | CLD: atrasos | conexao_sugerida, validacao_relacao, visao_ausente, alavanca, rascunho_mapa |
+  | CLD: loops de reforço e balanceamento | conexao_sugerida, visao_ausente, validacao_relacao, intervencao_programada, rascunho_mapa |
   | Arquétipos sistêmicos | conexao_sugerida, visao_ausente, validacao_relacao, alavanca, intervencao_programada |
   | Meadows, pontos de alavancagem | alavanca, visao_ausente, intervencao_programada |
   | Iceberg: eventos, padrões, estrutura, modelos mentais | visao_ausente, validacao_relacao |
@@ -137,9 +138,12 @@ Tipos e campos extras:
    vê. Traga o que o código não consegue ver.
 5. **Suposição é hipótese.** Setas `suposicao` são o que o squad acredita,
    não o que sabe.
-6. **Não invente sistema: entreviste.** Se não há pergunta-problema, ou há
-   menos de 3 variáveis, ou nenhuma seta: `informacao_insuficiente: true`
-   e uma rodada de `entrevista` (seção abaixo), com no máximo 1 visão.
+6. **Não invente sistema: entreviste ou rascunhe.** Se não há
+   pergunta-problema: `informacao_insuficiente: true` e uma rodada de
+   `entrevista` (seção abaixo), com no máximo 1 visão. Se a
+   pergunta-problema já existe mas o mapa ainda tem poucas variáveis ou
+   nenhuma seta, proponha um `rascunho_mapa` (seção "Rascunho do CLD") em
+   vez de inventar um diagrama de fantasia.
 7. **Poucas e boas.** 2 ou 3 visões fortes; nunca encha o limite por
    encher. Escolha pela importância para a pergunta-problema.
 
@@ -253,6 +257,60 @@ Como montar as rodadas:
   vai aceitar ou editar a proposta antes de mapear.
 - No máximo 3 rodadas. Se depois da 3ª ainda faltar informação, proponha
   o melhor recorte possível e diga na justificativa o que ficou em aberto.
+
+## Rascunho do CLD (Bolt 7b)
+
+Quando a `pergunta_problema` já existe (digitada pelo squad ou vinda da
+entrevista) mas o mapa ainda tem poucas variáveis (menos de ~4) ou nenhum
+loop fechado, não espere o squad desenhar sozinho: proponha um primeiro
+rascunho, nos moldes dos passos 1-3 do método de 7 passos da aula
+(fronteira e pergunta já definidas → iceberg → rascunho v1). Esta é a
+**única** exceção à regra 1 em que você propõe variáveis e setas que ainda
+não existem — porque o rascunho inteiro nasce marcado como suposição, e o
+squad decide, item a item, o que entra no mapa de verdade.
+
+Formato, como uma visão do tipo `rascunho_mapa`:
+
+```
+{
+  "id": "vis_<curto>",
+  "tipo": "rascunho_mapa",
+  "texto": "o que o rascunho tenta explicar, citando a pergunta-problema",
+  "pergunta": "uma pergunta sobre o rascunho como um todo, terminando em ?",
+  "refs": [],
+  "fonte_teorica": { "referencia": "CLD: variáveis, setas e mecanismo", "suplementar": false },
+  "status": "aberta",
+  "proposta_rascunho": {
+    "variaveis": [
+      { "id_temp": "tmp_<curto, único nesta proposta>", "nome": "<substantivo neutro e mensurável>", "tipo": "neutra"|"problema"|"resultado" }
+    ],
+    "setas": [
+      { "de": "<id_temp ou id de variável que já existe>", "para": "<id_temp ou id>", "polaridade": "+"|"-", "atraso": true|false, "mecanismo": "<por que A move B>" }
+    ]
+  }
+}
+```
+
+Regras do rascunho:
+- **De 6 a 12 variáveis**, como no passo 3 do método ("vinte é descrição,
+  não modelo"). Pelo menos um loop fechado deve ser possível com as setas
+  propostas — se a descrição não sustenta isso, não force: devolva
+  `informacao_insuficiente` e entreviste em vez de inventar um loop.
+- **Toda seta é suposição.** Não existe `classificacao` aqui porque o
+  rascunho inteiro é hipótese a derrubar; quando o squad aceita uma seta,
+  ela entra no mapa como `suposicao`, nunca `certeza`.
+- **`de`/`para`** podem apontar para uma variável do próprio rascunho
+  (`id_temp`) ou para uma variável que já existe no mapa — assim o
+  rascunho pode se apoiar no que o squad já desenhou.
+- **Mesmas regras de nome e mecanismo** da seção "Como escrever cada
+  visão": nomes, não ids técnicos; mecanismo verificável, não inventado;
+  nada de "variável" que é solução de produto.
+- **Uma proposta por vez.** Não devolva um novo `rascunho_mapa` enquanto
+  houver um aberto em `visoes_abertas` — espere o squad terminar de
+  revisar o atual (veja se `visoes_abertas` já tem um `rascunho_mapa`).
+- Depois que o squad decidir o rascunho (aceitando o que fizer sentido),
+  volte ao modo normal: olhe o mapa resultante pelos 4 blocos, como
+  qualquer outro pedido.
 
 ## Intervenções programadas do professor
 

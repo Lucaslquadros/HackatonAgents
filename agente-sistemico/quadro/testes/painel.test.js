@@ -93,3 +93,48 @@ test("htmlPainel monta os 4 blocos e escapa texto do usuário", () => {
   assert.ok(!html.includes("<script>"));
   assert.ok(html.includes("&lt;script&gt;"));
 });
+
+// ---------- Matriz CSD (Bolt 8) ----------
+
+test("htmlPainel sem csd não quebra e mostra a Matriz CSD vazia", () => {
+  const m = lastmile();
+  const html = htmlPainel(m, validarMapa(m), {});
+  assert.ok(html.includes("Matriz CSD"));
+  assert.ok(html.includes("Nenhum item ainda"));
+});
+
+test("htmlPainel lista os itens da CSD recebida, com status e origem pelo nome", () => {
+  const m = lastmile();
+  const csd = {
+    itens: [
+      { id: "csd_01", tipo: "suposicao", texto: "<b>x</b>", status: "proposto", pergunta_pesquisa: "Aumenta?", origem: { etapa: "mapa_sistemico", ref: "seta_03" } },
+      { id: "csd_02", tipo: "duvida", texto: "y", status: "confirmado", tarefa_discovery: "Medir" },
+    ],
+  };
+  const html = htmlPainel(m, validarMapa(m), { csd });
+  assert.ok(html.includes("Matriz CSD <span class=\"contagem\">2</span>"));
+  assert.ok(!html.includes("<b>x</b>"), "texto do item é escapado");
+  assert.ok(html.includes("&lt;b&gt;x&lt;/b&gt;"));
+  assert.ok(html.includes("Carga por entregador") || html.includes("Tempo médio de entrega"), "origem aparece pelo nome da variável, não pelo id");
+  assert.ok(html.includes("data-csd-status=\"confirmado\" data-csd-id=\"csd_01\""));
+  assert.ok(!html.includes("data-csd-status=\"confirmado\" data-csd-id=\"csd_02\""), "item já confirmado não tem botão para confirmar de novo");
+});
+
+test("htmlPainel: alavanca com suposições mostra a contagem de confirmadas", () => {
+  const m = lastmile();
+  const csd = { itens: [{ id: "csd_01", tipo: "suposicao", status: "confirmado" }, { id: "csd_02", tipo: "suposicao", status: "proposto" }] };
+  adicionarAlavanca(m, {
+    alvo: { tipo: "variavel", refs: ["var_pressao"] }, nivel_meadows: "regra",
+    impacto_esperado: "x", teste_sanidade: "y", autor: "mem_ana", suposicoes: ["csd_01", "csd_02"],
+  }, csd.itens);
+  const html = htmlPainel(m, validarMapa(m), { csd });
+  assert.match(html, /Depende de 2 suposições da CSD\s*\(1 confirmada, 1 ainda não\)/);
+});
+
+test("htmlPainel: formulário de nova alavanca só oferece suposições do tipo certo", () => {
+  const m = lastmile();
+  const csd = { itens: [{ id: "csd_01", tipo: "suposicao", texto: "Capacidade real" }, { id: "csd_02", tipo: "duvida", texto: "Não é suposição" }] };
+  const html = htmlPainel(m, validarMapa(m), { csd });
+  assert.ok(html.includes("<option value=\"csd_01\">Capacidade real</option>"));
+  assert.ok(!html.includes("<option value=\"csd_02\">"), "dúvida não é suposição, não entra nas opções da alavanca");
+});

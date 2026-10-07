@@ -27,6 +27,7 @@ ARQUIVO_PARA_DEF = {
     "ritual.json": "ritual",
     "pedido-visao.json": "pedido_visao",
     "resposta-visao.json": "resposta_visao",
+    "panorama.json": "panorama",
 }
 
 
@@ -132,6 +133,43 @@ def integridade(docs):
         if item["autor"] not in autores_validos:
             problemas.append(f"{item['id']}: autor {item['autor']} não está no squad")
 
+    panorama = docs["panorama"]
+    cenario_ids = {c["id"] for c in panorama["cenarios"]}
+    fato_ids = {f["id"] for f in panorama["fatos"]}
+    cluster_ids = {c["id"] for c in panorama["clusters"]}
+    problema_ids = {p["id"] for p in panorama["problemas_candidatos"]}
+    criterio_ids = {c["id"] for c in panorama["criterios_ranqueamento"]}
+    atores_cenario = {a["id"] for c in panorama["cenarios"] for a in c.get("atores", [])}
+    elementos_validos = fato_ids | atores_cenario
+
+    for f in panorama["fatos"]:
+        if f["cenario"] not in cenario_ids:
+            problemas.append(f"{f['id']}: cenario {f['cenario']} não existe")
+        if f["autor"] not in autores_validos:
+            problemas.append(f"{f['id']}: autor {f['autor']} não está no squad")
+    for c in panorama["clusters"]:
+        if c["cenario"] not in cenario_ids:
+            problemas.append(f"{c['id']}: cenario {c['cenario']} não existe")
+        for e in c["elementos"]:
+            if e not in elementos_validos:
+                problemas.append(f"{c['id']}: elemento {e} não é fato nem ator conhecido")
+    for p in panorama["problemas_candidatos"]:
+        if p["cenario"] not in cenario_ids:
+            problemas.append(f"{p['id']}: cenario {p['cenario']} não existe")
+        for fid in p["fontes"]:
+            if fid not in fato_ids:
+                problemas.append(f"{p['id']}: fonte {fid} não é um fato conhecido")
+        if "cluster_origem" in p and p["cluster_origem"] not in cluster_ids:
+            problemas.append(f"{p['id']}: cluster_origem {p['cluster_origem']} não existe")
+    for n in panorama["ranqueamento"]:
+        if n["problema"] not in problema_ids:
+            problemas.append(f"ranqueamento: problema {n['problema']} não existe")
+        if n["criterio"] not in criterio_ids:
+            problemas.append(f"ranqueamento: critério {n['criterio']} não existe")
+    finalista = panorama.get("finalista")
+    if finalista and finalista["problema"] not in problema_ids:
+        problemas.append(f"finalista: problema {finalista['problema']} não existe")
+
     if docs["resposta_visao"]["pedido"] != docs["pedido_visao"]["id"]:
         problemas.append("resposta-visao não corresponde ao pedido-visao")
     refs_conhecidas = elementos_mapa | csd_ids | ref_ids
@@ -200,8 +238,13 @@ def main():
     quebrado = copy.deepcopy(docs)
     quebrado["mapa"]["setas"][0]["para"] = "var_inexistente"
     quebrado["mapa"]["variaveis"][0]["autor"] = "mem_desconhecido"
+    quebrado["panorama"]["problemas_candidatos"][0]["fontes"] = ["fat_inexistente"]
     achados = integridade(quebrado)
-    esperados = ["seta_01: 'para' aponta para var_inexistente", "var_contratos: autor mem_desconhecido"]
+    esperados = [
+        "seta_01: 'para' aponta para var_inexistente",
+        "var_contratos: autor mem_desconhecido",
+        "prob_offline: fonte fat_inexistente não é um fato conhecido",
+    ]
     for esp in esperados:
         if any(a.startswith(esp) for a in achados):
             print(f"   ok     detectou: {esp}")

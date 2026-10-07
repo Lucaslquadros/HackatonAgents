@@ -7,6 +7,8 @@
   --grade: #e7eaef;
   --destaque: #2563eb;
   --perigo: #b42318;
+  --aviso: #92600a;
+  --aviso-fundo: #fdf3dc;
 
   /* Cores do template da aula: azul neutra, vermelho problema, verde resultado. */
   --neutra-fundo: #e3edff;
@@ -34,6 +36,8 @@
     --grade: #232833;
     --destaque: #6b9bff;
     --perigo: #ff7b72;
+    --aviso: #e0ac4e;
+    --aviso-fundo: #3a2f14;
     --neutra-fundo: #1e2b46;
     --neutra-borda: #6b9bff;
     --problema-fundo: #43201e;
@@ -262,7 +266,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 13px; backg
 .visao { border: 1px solid var(--borda); border-left: 4px solid var(--destaque); border-radius: 8px; padding: 8px 10px; }
 .visao p { margin: 5px 0; line-height: 1.4; }
 .visao.fechada { opacity: 0.7; }
-.visao.conexao_sugerida, .visao.alavanca { border-left-color: var(--reforco); }
+.visao.conexao_sugerida, .visao.alavanca, .visao.rascunho_mapa { border-left-color: var(--reforco); }
 .visao.visao_ausente, .visao.cobertura_ritual { border-left-color: var(--balanco); }
 .visao.estacionar { border-left-color: var(--texto-suave); }
 .visao-tipo { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-suave); font-weight: 700; }
@@ -273,6 +277,22 @@ code { font-family: Consolas, "Cascadia Mono", monospace; font-size: 13px; backg
 .fonte { font-size: 12px; color: var(--texto-suave); }
 .suplementar { font-size: 11px; border: 1px solid var(--borda); border-radius: 4px; padding: 0 4px; }
 .visoes-fechadas summary { cursor: pointer; color: var(--texto-suave); margin: 6px 0; }
+
+/* Rascunho de CLD proposto pelo agente (Bolt 7b) */
+.itens-rascunho { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.item-rascunho { border: 1px dashed var(--borda); border-radius: 8px; padding: 6px 10px; font-size: 13px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+.item-rascunho p { width: 100%; margin: 4px 0 0; }
+.item-rascunho.feita { opacity: 0.7; border-style: solid; }
+.item-rascunho.recusada { opacity: 0.55; text-decoration: line-through; }
+
+/* Matriz CSD (Bolt 8) */
+.csd-painel summary { cursor: pointer; color: var(--texto-suave); margin: 10px 0 6px; }
+.csd-itens { list-style: none; padding: 0; margin: 6px 0; display: grid; gap: 8px; }
+.csd-item { border: 1px solid var(--borda); border-left: 4px solid var(--texto-suave); border-radius: 8px; padding: 6px 10px; font-size: 13px; }
+.csd-item p { margin: 4px 0; }
+.csd-tipo { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--texto-suave); font-weight: 700; }
+.csd-item.confirmado { border-left-color: var(--reforco); }
+.csd-item.descartado { opacity: 0.6; }
 
 /* Sugestões do agente no quadro e estacionamento (Bolt 5) */
 .seta.sugerida .linha { stroke: var(--reforco); stroke-dasharray: 7 5; opacity: 0.9; }
@@ -318,3 +338,116 @@ button.aceitar { border-color: var(--reforco); color: var(--reforco); font-weigh
   .area { grid-template-columns: 1fr; grid-template-rows: 1fr 45vh; }
   .lateral { border-left: 0; border-top: 1px solid var(--borda); }
 }
+
+/* Ritual do fundo do U (Bolt 9): dispositivo de tela cheia, por cima de
+   tudo — inclusive do painel de visões, que fica "oculto" por estar coberto. */
+.ritual-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--fundo);
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+}
+.ritual-overlay[hidden] { display: none; }
+.ritual-overlay > div {
+  max-width: 560px;
+  width: 100%;
+  margin: 24px 16px;
+  padding: 20px 24px;
+  background: var(--superficie);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  height: fit-content;
+}
+.ritual-overlay h2 { margin-top: 0; }
+.ritual-overlay label { display: block; margin: 12px 0 4px; font-weight: 600; }
+.ritual-overlay textarea, .ritual-overlay input[type="text"], .ritual-overlay input[type="number"], .ritual-overlay select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--fundo);
+}
+.ritual-overlay textarea { min-height: 70px; }
+.ritual-pergunta { font-size: 17px; font-weight: 600; margin: 10px 0; }
+.ritual-cronometro { font-variant-numeric: tabular-nums; font-size: 20px; color: var(--destaque); }
+.ritual-cronometro.esgotado { color: var(--perigo); font-size: 14px; }
+.tipo-reflexao { border: 0; display: flex; gap: 16px; padding: 0; margin: 10px 0; }
+.tipo-reflexao label { display: flex; align-items: center; gap: 6px; font-weight: 400; margin: 0; }
+.ritual-contagem { color: var(--texto-suave); font-size: 13px; }
+.reflexoes-reveladas { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 10px; }
+.reflexao-revelada { border: 1px solid var(--borda); border-radius: 8px; padding: 8px 10px; }
+.reflexao-meta { color: var(--texto-suave); font-size: 12px; margin: 0 0 4px; }
+.reflexao-texto { margin: 0 0 6px; }
+.ritual-pendente { color: var(--pergunta); font-size: 13px; }
+.ritual-coberta { color: var(--reforco); font-size: 13px; }
+.ritual-ausente { color: var(--perigo); font-size: 13px; }
+.cobertura-membro { list-style: none; padding: 0; margin: 4px 0 14px; font-size: 13px; color: var(--texto-suave); }
+.ritual-divergencias { border-top: 1px solid var(--grade); margin-top: 16px; padding-top: 8px; }
+.ritual-divergencias summary { cursor: pointer; color: var(--texto-suave); margin: 6px 0; }
+.csd-da-reflexao { margin-top: 8px; border-top: 1px dashed var(--grade); padding-top: 6px; }
+.csd-da-reflexao summary { cursor: pointer; color: var(--destaque); }
+
+/* Panorama (Bolt 1 do Agente de Panorama): mesma mecânica de overlay do
+   ritual, mas mais largo — é uma lista de fatos por cenário, não um
+   formulário de uma coluna só. */
+.panorama-overlay > div { max-width: 820px; }
+.panorama-tela h2 { margin-top: 8px; }
+.panorama-form-cenario { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; margin: 14px 0; }
+.panorama-form-cenario h3 { margin-top: 0; }
+.panorama-cenarios { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.panorama-cenario-botao { padding: 6px 12px; border: 1px solid var(--borda); border-radius: 999px; background: var(--fundo); cursor: pointer; }
+.panorama-cenario-botao.ativo { background: var(--destaque); border-color: var(--destaque); color: #fff; }
+.panorama-cenario-cabecalho { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.panorama-contagem { color: var(--texto-suave); font-size: 13px; }
+.panorama-fatos { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 10px; }
+.panorama-fato { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; }
+.panorama-fato-cabecalho { display: flex; gap: 8px; align-items: flex-start; }
+.panorama-fato-cabecalho textarea { flex: 1; min-height: 50px; }
+.panorama-evidencia { margin-top: 8px; border-top: 1px dashed var(--grade); padding-top: 6px; }
+.panorama-avisos { color: var(--aviso); background: var(--aviso-fundo); border-radius: 8px; padding: 8px 12px; margin: 10px 0; }
+.panorama-avisos ul { margin: 4px 0 0; padding-left: 18px; }
+.panorama-clusters { margin-top: 18px; border-top: 1px solid var(--borda); padding-top: 12px; }
+.panorama-clusters-lista { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 10px; }
+.panorama-cluster { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; }
+.panorama-cluster-cabecalho { display: flex; gap: 8px; align-items: center; }
+.panorama-cluster-cabecalho input { flex: 1; }
+.panorama-cluster-elementos { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.panorama-cluster-elementos li { display: flex; align-items: center; gap: 4px; border: 1px solid var(--borda); border-radius: 999px; padding: 3px 8px; font-size: 13px; }
+.panorama-cluster-elementos li.panorama-no { border-color: var(--aviso); background: var(--aviso-fundo); }
+.panorama-no-selo { background: var(--aviso); color: var(--aviso-fundo); border-radius: 999px; padding: 1px 6px; font-size: 11px; font-weight: 600; }
+.panorama-cluster-add { display: flex; gap: 6px; margin-top: 6px; }
+.panorama-cluster-add select { flex: 1; }
+.csd-explicacao { margin: 10px 0; border: 1px dashed var(--grade); border-radius: 6px; padding: 6px 10px; }
+.csd-explicacao summary { cursor: pointer; color: var(--destaque); }
+.csd-explicacao ul { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+.panorama-problemas { margin-top: 18px; border-top: 1px solid var(--borda); padding-top: 12px; }
+.panorama-problemas-lista { list-style: none; padding: 0; margin: 10px 0; display: grid; gap: 10px; }
+.panorama-problema { border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px; }
+.panorama-problema-cabecalho { display: flex; gap: 8px; align-items: flex-start; }
+.panorama-problema-cabecalho textarea { flex: 1; min-height: 50px; }
+.panorama-problema-fontes { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 4px; font-size: 13px; }
+
+.panorama-ranqueamento { margin-top: 20px; border-top: 2px solid var(--borda); padding-top: 14px; }
+.panorama-criterios { margin: 10px 0 16px; }
+.panorama-criterios-lista { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.panorama-criterios-lista li { display: flex; align-items: center; gap: 8px; }
+.panorama-criterios-lista input[type="text"] { flex: 1; }
+.panorama-matriz-wrap { overflow-x: auto; margin-top: 10px; }
+.panorama-matriz { border-collapse: collapse; width: 100%; font-size: 13px; }
+.panorama-matriz th, .panorama-matriz td { border: 1px solid var(--borda); padding: 6px 8px; text-align: left; vertical-align: top; }
+.panorama-matriz th { background: var(--fundo-suave, var(--fundo)); white-space: nowrap; }
+.panorama-matriz-problema { min-width: 220px; max-width: 320px; }
+.panorama-matriz-celula { min-width: 90px; }
+.panorama-matriz-total { font-weight: 600; white-space: nowrap; }
+.panorama-apoio-time-details { margin-top: 4px; font-size: 12px; }
+.panorama-apoio-time-details summary { cursor: pointer; color: var(--texto-suave); }
+.panorama-apoio-time { list-style: none; padding: 0; margin: 4px 0 0; }
+.panorama-apoio-time li { padding: 2px 0; }
+
+.panorama-matriz-acao { white-space: nowrap; text-align: center; }
+.panorama-linha-finalista { background: var(--aviso-fundo); }
+.panorama-finalista-banner { margin-top: 14px; border: 1px solid var(--borda); border-left: 4px solid var(--aviso); border-radius: 8px; padding: 10px 14px; }
+.panorama-finalista-banner .comando { margin: 6px 0; }

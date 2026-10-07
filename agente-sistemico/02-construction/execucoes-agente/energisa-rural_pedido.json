@@ -1,0 +1,45 @@
+{
+  "versao": 1,
+  "id": "ped_energisa_rur_01",
+  "criado_em": "2026-10-05T18:00:00-03:00",
+  "gatilho": "pedido",
+  "mapa": {
+    "versao": 1,
+    "recorte": "rec_energisa_rural",
+    "contexto": {
+      "tema": "Acidentes com a rede elétrica da Energisa em zona rural",
+      "descricao": "Ideathon Energisa 2026: o edital (item 5.2) lista como causas de acidentes com a rede, entre outras, colisões de veículos, quebra de poste e cabo energizado no solo — mais plausíveis em estradas e propriedades rurais, onde a rede cobre distâncias maiores.",
+      "pergunta_problema": "Por que postes danificados e cabos energizados no solo continuam expostos por mais tempo em zona rural antes do reparo, e isso aumenta o risco de novos acidentes?",
+      "horizonte_tempo": "Não declarado no edital — recorte assume o período de inscrição e execução do próprio Ideathon (até 07/02/2026)",
+      "fronteira": "Entre a ocorrência de danos à rede elétrica em estradas/propriedades rurais e a capacidade de resposta e reparo da Energisa nessas áreas."
+    },
+    "atores": [
+      { "id": "ator_motoristas_rur", "nome": "Motoristas e operadores de máquinas agrícolas", "papeis": ["sofre", "opera"] },
+      { "id": "ator_energisa_rur", "nome": "Energisa (equipe de manutenção rural)", "papeis": ["opera"] },
+      { "id": "ator_moradores_rur", "nome": "Moradores e produtores rurais próximos à rede", "papeis": ["sofre"] }
+    ],
+    "variaveis": [
+      { "id": "var_colisao", "nome": "Colisão de veículos e máquinas agrícolas com postes", "tipo": "problema", "atores": ["ator_motoristas_rur"], "status": "aceita", "autor": "mem_teste", "posicao": { "x": 80, "y": 80 } },
+      { "id": "var_poste_caido", "nome": "Postes danificados ou caídos na zona rural", "tipo": "problema", "atores": ["ator_energisa_rur"], "status": "aceita", "autor": "mem_teste", "posicao": { "x": 320, "y": 80 } },
+      { "id": "var_cabo_solo", "nome": "Cabo energizado exposto no solo após a queda", "tipo": "problema", "atores": ["ator_moradores_rur"], "status": "aceita", "autor": "mem_teste", "posicao": { "x": 560, "y": 80 } },
+      { "id": "var_tempo_resposta", "nome": "Tempo de resposta da Energisa para reparo em área rural", "tipo": "neutra", "atores": ["ator_energisa_rur"], "status": "aceita", "autor": "mem_teste", "posicao": { "x": 320, "y": 280 } }
+    ],
+    "setas": [
+      { "id": "seta_01", "de": "var_colisao", "para": "var_poste_caido", "polaridade": "+", "atraso": false, "mecanismo": "Colisões de veículos ou máquinas agrícolas derrubam ou danificam postes de energia.", "classificacao": "certeza", "fonte": "Edital Ideathon Energisa 2026, item 5.2 (lista 'veículos' e 'quebra de poste' entre as causas de acidente)", "status": "aceita", "autor": "mem_teste" },
+      { "id": "seta_02", "de": "var_poste_caido", "para": "var_cabo_solo", "polaridade": "+", "atraso": false, "mecanismo": "Poste danificado ou caído derruba o cabo energizado no chão.", "classificacao": "certeza", "fonte": "Edital Ideathon Energisa 2026, item 5.2 (lista 'cabo energizado no solo' e 'quebra de poste' entre as causas de acidente)", "status": "aceita", "autor": "mem_teste" },
+      { "id": "seta_03", "de": "var_cabo_solo", "para": "var_tempo_resposta", "polaridade": "+", "atraso": true, "atraso_descricao": "Horas: a distância até a central de atendimento rural atrasa o deslocamento da equipe", "mecanismo": "Mais ocorrências de cabo no solo, em áreas distantes, sobrecarregam a equipe de manutenção e aumentam o tempo até o reparo.", "classificacao": "suposicao", "status": "aceita", "autor": "mem_teste" },
+      { "id": "seta_04", "de": "var_tempo_resposta", "para": "var_colisao", "polaridade": "+", "atraso": false, "mecanismo": "Enquanto o reparo demora, o poste ou cabo danificado fica mais tempo exposto na via ou na propriedade, aumentando a chance de uma nova colisão ou contato.", "classificacao": "suposicao", "status": "aceita", "autor": "mem_teste" }
+    ],
+    "loops_anotados": [],
+    "analise": {},
+    "alavancas": []
+  },
+  "validacao": {
+    "loops": [
+      { "setas": ["seta_01", "seta_02", "seta_03", "seta_04"], "negativas": 0, "tipo": "R", "tem_atraso": true }
+    ],
+    "problemas": []
+  },
+  "visoes_abertas": [],
+  "limite_visoes": 3
+}

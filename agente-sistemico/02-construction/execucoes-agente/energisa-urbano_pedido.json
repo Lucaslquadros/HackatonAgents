@@ -1,0 +1,45 @@
+{
+  "versao": 1,
+  "id": "ped_energisa_urb_01",
+  "criado_em": "2026-10-05T18:00:00-03:00",
+  "gatilho": "pedido",
+  "mapa": {
+    "versao": 1,
+    "recorte": "rec_energisa_urbano",
+    "contexto": {
+      "tema": "Acidentes com a rede elétrica da Energisa em área urbana",
+      "descricao": "Ideathon Energisa 2026: o edital (item 5.2) lista como causas de acidentes com a rede, entre outras, ligações clandestinas, uso de pipas e poda de árvores — comuns em contexto urbano denso.",
+      "pergunta_problema": "Por que ligações clandestinas e o uso de pipas continuam acontecendo perto da rede elétrica em áreas urbanas, mesmo havendo fiscalização e campanhas de conscientização?",
+      "horizonte_tempo": "Não declarado no edital — recorte assume o período de inscrição e execução do próprio Ideathon (até 07/02/2026)",
+      "fronteira": "Entre o comportamento de moradores/terceiros perto da rede elétrica urbana e a capacidade de fiscalização e resposta da Energisa nessa área."
+    },
+    "atores": [
+      { "id": "ator_moradores_urb", "nome": "Moradores e terceiros em área urbana", "papeis": ["sofre", "opera"] },
+      { "id": "ator_energisa_urb", "nome": "Energisa (concessionária)", "papeis": ["opera", "regula"] },
+      { "id": "ator_poder_publico_urb", "nome": "Poder público municipal", "papeis": ["regula"] }
+    ],
+    "variaveis": [
+      { "id": "var_gatos", "nome": "Ligações clandestinas na rede", "tipo": "problema", "atores": ["ator_moradores_urb"], "status": "aceita", "autor": "mem_teste", "posicao": { "x": 80, "y": 80 } },
+      { "id": "var_pipas", "nome": "Uso de pipas com linha metalizada perto da rede", "tipo": "problema", "atores": ["ator_moradores_urb"], "status": "aceita", "autor": "mem_teste", "posicao": { "x": 80, "y": 260 } },
+      { "id": "var_acidentes_urb", "nome": "Acidentes com a rede elétrica em área urbana", "tipo": "problema", "atores": ["ator_moradores_urb", "ator_energisa_urb"], "status": "aceita", "autor": "mem_teste", "posicao": { "x": 320, "y": 170 } },
+      { "id": "var_fiscalizacao", "nome": "Fiscalização e denúncias de risco à rede", "tipo": "neutra", "atores": ["ator_energisa_urb", "ator_poder_publico_urb"], "status": "aceita", "autor": "mem_teste", "posicao": { "x": 560, "y": 170 } }
+    ],
+    "setas": [
+      { "id": "seta_01", "de": "var_gatos", "para": "var_acidentes_urb", "polaridade": "+", "atraso": false, "mecanismo": "Ligações irregulares aumentam o contato de pessoas com partes energizadas da rede.", "classificacao": "certeza", "fonte": "Edital Ideathon Energisa 2026, item 5.2 (lista 'ligações clandestinas' entre as causas de acidente)", "status": "aceita", "autor": "mem_teste" },
+      { "id": "seta_02", "de": "var_pipas", "para": "var_acidentes_urb", "polaridade": "+", "atraso": false, "mecanismo": "Linha metalizada de pipa encostando na rede energizada causa choque ou curto-circuito.", "classificacao": "certeza", "fonte": "Edital Ideathon Energisa 2026, item 5.2 (lista 'pipas' entre as causas de acidente)", "status": "aceita", "autor": "mem_teste" },
+      { "id": "seta_03", "de": "var_acidentes_urb", "para": "var_fiscalizacao", "polaridade": "+", "atraso": true, "atraso_descricao": "Semanas: acidentes precisam se acumular ou ganhar repercussão antes de virar prioridade de fiscalização", "mecanismo": "Acidentes recorrentes pressionam Energisa e poder público a aumentar fiscalização e denúncias.", "classificacao": "suposicao", "status": "aceita", "autor": "mem_teste" },
+      { "id": "seta_04", "de": "var_fiscalizacao", "para": "var_gatos", "polaridade": "-", "atraso": false, "mecanismo": "Mais fiscalização e denúncias reduzem o número de ligações clandestinas ativas.", "classificacao": "suposicao", "status": "aceita", "autor": "mem_teste" }
+    ],
+    "loops_anotados": [],
+    "analise": {},
+    "alavancas": []
+  },
+  "validacao": {
+    "loops": [
+      { "setas": ["seta_01", "seta_03", "seta_04"], "negativas": 1, "tipo": "B", "tem_atraso": true }
+    ],
+    "problemas": []
+  },
+  "visoes_abertas": [],
+  "limite_visoes": 3
+}

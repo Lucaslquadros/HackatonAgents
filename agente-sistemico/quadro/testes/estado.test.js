@@ -6,7 +6,8 @@ import path from "node:path";
 
 import {
   novoMapa, normalizar, proximoId, adicionarVariavel, adicionarSeta, adicionarAtor,
-  moverVariavel, atualizar, remover, pendencias,
+  moverVariavel, atualizar, remover, pendencias, adicionarAlavanca,
+  novoCsd, proporItemCsd, proporSetaParaCsd, aceitarItemCsd, mudarStatusItemCsd,
 } from "../estado.js";
 
 const aqui = path.dirname(fileURLToPath(import.meta.url));
@@ -89,6 +90,93 @@ test("mover arredonda a posição", () => {
   const { m, a } = mapaComTres();
   moverVariavel(m, a.id, { x: 1.6, y: 2.2 });
   assert.deepEqual(m.variaveis[0].posicao, { x: 2, y: 2 });
+});
+
+// ---------- Matriz CSD (Bolt 8) ----------
+// `csd` é irmã do `mapa` no contrato (hackos.schema.json), não filha dele —
+// por isso essas funções recebem um `csd` à parte, nunca `mapa.csd`.
+
+test("CSD: propor seta suposição cria item 'proposto' e liga csd_item; recusa duplicar", () => {
+  const { m, a, b } = mapaComTres();
+  m.contexto = { tema: "t", pergunta_problema: "p" };
+  const s = adicionarSeta(m, { de: a.id, para: b.id, autor: "mem_a" });
+  atualizar(m, s.id, { mecanismo: "Mais fila, mais pressão." });
+  const csd = novoCsd();
+  const item = proporSetaParaCsd(csd, m, s.id, { pergunta_pesquisa: "Mais fila aumenta a pressão?", autor: "mem_a", agora: "2026-10-05T10:00:00-03:00" });
+  assert.equal(item.status, "proposto");
+  assert.equal(item.tipo, "suposicao");
+  assert.equal(item.origem.ref, s.id);
+  assert.equal(s.csd_item, item.id);
+  assert.throws(() => proporSetaParaCsd(csd, m, s.id, { pergunta_pesquisa: "de novo?", autor: "mem_a", agora: "x" }), /já está na Matriz CSD/);
+});
+
+test("CSD: só seta marcada como suposição pode virar proposta", () => {
+  const { m, a, b } = mapaComTres();
+  const s = adicionarSeta(m, { de: a.id, para: b.id, autor: "mem_a" });
+  atualizar(m, s.id, { mecanismo: "x", classificacao: "certeza", fonte: "Dado X" });
+  const csd = novoCsd();
+  assert.throws(() => proporSetaParaCsd(csd, m, s.id, { pergunta_pesquisa: "p", autor: "mem_a", agora: "x" }), /Só setas marcadas como suposição/);
+});
+
+test("CSD: proporItemCsd exige pergunta de pesquisa em suposição e tarefa de discovery em dúvida", () => {
+  const { m } = mapaComTres();
+  const csd = novoCsd();
+  assert.throws(
+    () => proporItemCsd(csd, m, { tipo: "suposicao", texto: "x", autor: "mem_a", origem: { etapa: "mapa_sistemico" }, agora: "x" }),
+    /pergunta de pesquisa/,
+  );
+  assert.throws(
+    () => proporItemCsd(csd, m, { tipo: "duvida", texto: "x", autor: "mem_a", origem: { etapa: "mapa_sistemico" }, agora: "x" }),
+    /tarefa de discovery/,
+  );
+  const item = proporItemCsd(csd, m, { tipo: "duvida", texto: "x", autor: "mem_a", origem: { etapa: "mapa_sistemico" }, tarefa_discovery: "Perguntar pro squad", agora: "x" });
+  assert.equal(item.id, "csd_01");
+  assert.equal(csd.itens.length, 1);
+});
+
+test("CSD: ids novos não colidem com os já usados pela própria CSD", () => {
+  const { m } = mapaComTres();
+  const csd = { itens: [{ id: "csd_01" }, { id: "csd_02" }] };
+  assert.equal(proximoId(m, "csd", 2, csd.itens), "csd_03");
+});
+
+test("CSD: aceitarItemCsd registra o item pronto vindo do agente; recusa duplicata", () => {
+  const csd = novoCsd();
+  const proposta = {
+    id: "csd_09", tipo: "suposicao", texto: "x", autor: "agente",
+    criado_em: "2026-10-05T10:00:00-03:00", status: "proposto",
+    origem: { etapa: "mapa_sistemico" }, evidencias: [], pergunta_pesquisa: "p?",
+  };
+  const item = aceitarItemCsd(csd, proposta);
+  assert.equal(item.texto, "x");
+  assert.throws(() => aceitarItemCsd(csd, proposta), /já está na Matriz CSD/);
+});
+
+test("CSD: mudarStatusItemCsd troca o status; id inexistente não lança", () => {
+  const csd = { itens: [{ id: "csd_01", status: "proposto" }] };
+  mudarStatusItemCsd(csd, "csd_01", "confirmado");
+  assert.equal(csd.itens[0].status, "confirmado");
+  assert.doesNotThrow(() => mudarStatusItemCsd(csd, "csd_99", "confirmado"));
+});
+
+test("adicionarAlavanca: só guarda suposições que existem na lista da CSD recebida", () => {
+  const { m, a } = mapaComTres();
+  const csdItens = [{ id: "csd_01" }, { id: "csd_02" }];
+  const alv = adicionarAlavanca(m, {
+    alvo: { tipo: "variavel", refs: [a.id] }, nivel_meadows: "regra",
+    impacto_esperado: "x", teste_sanidade: "y", autor: "mem_a",
+    suposicoes: ["csd_01", "csd_99", "csd_01"],
+  }, csdItens);
+  assert.deepEqual(alv.suposicoes, ["csd_01"]);
+});
+
+test("adicionarAlavanca: sem suposições, o campo nem aparece (contrato não tem array vazio)", () => {
+  const { m, a } = mapaComTres();
+  const alv = adicionarAlavanca(m, {
+    alvo: { tipo: "variavel", refs: [a.id] }, nivel_meadows: "regra",
+    impacto_esperado: "x", teste_sanidade: "y", autor: "mem_a",
+  });
+  assert.equal("suposicoes" in alv, false);
 });
 
 test("normalizar completa arquivo incompleto sem perder dados", () => {
