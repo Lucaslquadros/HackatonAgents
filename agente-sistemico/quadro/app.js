@@ -15,7 +15,7 @@ import { montarPedido, mesclarVisoes, mudarStatus, htmlVisoes, situacaoConexao, 
 import { novaEntrevista, registrarRodada, rodadaAberta, responderRodada, aplicarRespostas, aceitarProposta, entrevistaParaPedido, htmlEntrevista } from "./entrevista.js";
 import { abrirRitual, enviarReflexao, encerrarReflexoes, ligarAoMapa, registrarDivergencia, enviarReflexaoParaCsd, ritualParaPedido, textoCronometro, htmlRitual } from "./ritual.js";
 import {
-  normalizarPanorama, adicionarCenario, removerCenario, adicionarFato, removerFato, atualizarFato,
+  novoPanorama, normalizarPanorama, adicionarCenario, removerCenario, adicionarFato, removerFato, atualizarFato,
   adicionarCluster, atualizarCluster, removerCluster, adicionarElementoCluster, removerElementoCluster,
   adicionarProblema, atualizarProblema, removerProblema, alternarFonteProblema,
   adicionarCriterio, atualizarCriterio, removerCriterio, definirNota,
@@ -1532,7 +1532,7 @@ overlayRitual.addEventListener("click", (e) => {
 // servidor expõe /api/panorama direto, sem passar por API(recorte, ...).
 
 function carregarPanorama() {
-  return lerArmazenado(CHAVE_PANORAMA, (t) => normalizarPanorama(JSON.parse(t)));
+  return lerArmazenado(CHAVE_PANORAMA, (t) => normalizarPanorama(JSON.parse(t))) || novoPanorama();
 }
 
 function gravarPanorama() {
