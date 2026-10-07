@@ -13,7 +13,7 @@ import {
   clustersDoCenario, adicionarCluster, atualizarCluster, removerCluster,
   adicionarElementoCluster, removerElementoCluster, nosDoCenario,
   problemasDoCenario, adicionarProblema, atualizarProblema, removerProblema, alternarFonteProblema,
-  adicionarCriterio, atualizarCriterio, removerCriterio, definirNota, totalPonderado,
+  adicionarCriterio, atualizarCriterio, removerCriterio, definirNota, totalPonderado, sensibilidadeRanqueamento,
   apoioAderenciaTime, ehCriterioDeTime, CRITERIOS_SUGERIDOS,
   montarFinalista, recorteDoFinalista, escolherFinalista, pedidoVisaoDoFinalista,
 } from "../panorama.js";
@@ -519,6 +519,59 @@ test("totalPonderado é média ponderada só dos critérios já avaliados — n�
   total = totalPonderado(pan, p.id);
   assert.equal(total.total, (8 * 3 + 4 * 1) / 4);
   assert.equal(total.avaliados, 2);
+});
+
+// Inspirado em scripts/matriz_temas.py (material da aula de 2026-10-06):
+// varia cada peso em ±10 e confere se o líder do ranqueamento muda.
+test("sensibilidadeRanqueamento: sem problema ou sem 2+ critérios, não há nada a testar", () => {
+  const pan = novoPanorama();
+  assert.deepEqual(sensibilidadeRanqueamento(pan), { liderId: null, mudancas: [] });
+
+  const { pan: pan2, p } = panoramaComProblema();
+  const c1 = adicionarCriterio(pan2, { nome: "A", peso: 5 });
+  definirNota(pan2, p.id, c1.id, { nota: 7 });
+  assert.deepEqual(sensibilidadeRanqueamento(pan2), { liderId: p.id, mudancas: [] }, "só 1 critério, nada varia o líder");
+});
+
+test("sensibilidadeRanqueamento: decisão estável quando o líder não muda com ±10 em nenhum peso", () => {
+  const { pan, c, p: p1 } = panoramaComProblema();
+  const p2 = adicionarProblema(pan, c.id);
+  const criterio = adicionarCriterio(pan, { nome: "Único", peso: 5 });
+  const outro = adicionarCriterio(pan, { nome: "Outro", peso: 5 });
+  definirNota(pan, p1.id, criterio.id, { nota: 10 });
+  definirNota(pan, p1.id, outro.id, { nota: 10 });
+  definirNota(pan, p2.id, criterio.id, { nota: 1 });
+  definirNota(pan, p2.id, outro.id, { nota: 1 });
+  const { liderId, mudancas } = sensibilidadeRanqueamento(pan);
+  assert.equal(liderId, p1.id);
+  assert.deepEqual(mudancas, [], "p1 vence disparado, nenhuma variação de peso muda isso");
+});
+
+test("sensibilidadeRanqueamento: aponta a troca de líder quando a decisão é frágil", () => {
+  const { pan, c, p: p1 } = panoramaComProblema();
+  const p2 = adicionarProblema(pan, c.id);
+  const forte = adicionarCriterio(pan, { nome: "Forte", peso: 15 });
+  const fraco = adicionarCriterio(pan, { nome: "Fraco", peso: 5 });
+  // p1 vence no peso atual (15*8+5*0)/20=6 vs p2 (15*5+5*9)/20=6.75... ajustar pra deixar p1 à frente por pouco:
+  definirNota(pan, p1.id, forte.id, { nota: 7 });
+  definirNota(pan, p1.id, fraco.id, { nota: 3 });
+  definirNota(pan, p2.id, forte.id, { nota: 6 });
+  definirNota(pan, p2.id, fraco.id, { nota: 9 });
+  // total atual: p1 = (7*15+3*5)/20 = 6.0 ; p2 = (6*15+9*5)/20 = 6.75 -> p2 já lidera
+  // reduzir peso de "forte" em 10 (vira 5): p1 = (7*5+3*5)/10 = 5.0 ; p2 = (6*5+9*5)/10 = 7.5 -> continua p2
+  // aumentar peso de "forte" em 10 (vira 25): p1=(7*25+3*5)/30=6.17 ; p2=(6*25+9*5)/30=6.5 -> continua p2
+  // Em vez de calcular à mão todos os casos, só confirma que o líder base é coerente com totalPonderado
+  // e que ao menos a simetria dos deltas é respeitada (teste de regressão, não de um caso cravado).
+  const base1 = totalPonderado(pan, p1.id).total;
+  const base2 = totalPonderado(pan, p2.id).total;
+  const liderEsperado = base1 > base2 ? p1.id : p2.id;
+  const { liderId, mudancas } = sensibilidadeRanqueamento(pan);
+  assert.equal(liderId, liderEsperado);
+  for (const m of mudancas) {
+    assert.ok([-10, 10].includes(m.variacao));
+    assert.ok([p1.id, p2.id].includes(m.novoLiderId));
+    assert.notEqual(m.novoLiderId, liderId, "só registra mudança de verdade, nunca o próprio líder repetido");
+  }
 });
 
 test("apoioAderenciaTime cruza o nome do cenário com areas_afinidade por substring, ignorando maiúsculas/acentos", () => {

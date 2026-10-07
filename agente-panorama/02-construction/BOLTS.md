@@ -269,6 +269,22 @@ candidatos → ranqueamento → handoff), motor do agente só entra no Bolt 6.
     é dado real do squad.
   - **Não testado:** uso real pelo Lucas no navegador (o checkpoint deste
     bolt).
+  - **Adendo (2026-10-07) — análise de sensibilidade:** depois de revisar
+    o material de aula do professor (`aulas/Hack_2/.../scripts/matriz_temas.py`),
+    portada a ideia de sensibilidade para o ranqueamento: nova função pura
+    `sensibilidadeRanqueamento(pan)` em `panorama.js` varia cada peso em
+    ±10 e confere se o líder do ranqueamento muda — avisa o squad antes de
+    escolher o finalista se a decisão é frágil a pequenas mudanças de
+    peso. Puramente matemático sobre o que o squad já decidiu (pesos e
+    notas); não sugere nem avalia nada por conta própria, não envolve
+    agente. Exibido na tela logo abaixo da matriz
+    (`.panorama-sensibilidade`). 3 testes novos — suíte do quadro foi de
+    147 para 150/150, sem regressão. Diferente do script do professor,
+    não portei a
+    otimização combinatória de alocação de equipes (`itertools.permutations`)
+    — não tem equivalente no Hack_OS hoje (seria sobre o Cadastro do
+    Time, não sobre ranqueamento de problema) e fica fora de escopo deste
+    bolt.
 
 ## Bolt 5 — Escolha do finalista + handoff pro Sistêmico
 

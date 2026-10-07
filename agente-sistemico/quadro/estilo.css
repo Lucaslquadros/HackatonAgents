@@ -451,3 +451,6 @@ button.aceitar { border-color: var(--reforco); color: var(--reforco); font-weigh
 .panorama-linha-finalista { background: var(--aviso-fundo); }
 .panorama-finalista-banner { margin-top: 14px; border: 1px solid var(--borda); border-left: 4px solid var(--aviso); border-radius: 8px; padding: 10px 14px; }
 .panorama-finalista-banner .comando { margin: 6px 0; }
+.panorama-sensibilidade { margin-top: 10px; border: 1px solid var(--aviso); background: var(--aviso-fundo); color: var(--aviso); border-radius: 8px; padding: 8px 12px; }
+.panorama-sensibilidade ul { margin: 4px 0 0; padding-left: 18px; }
+.panorama-sensibilidade-ok { margin-top: 10px; }

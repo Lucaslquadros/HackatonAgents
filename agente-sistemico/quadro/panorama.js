@@ -325,19 +325,62 @@ function notaDe(pan, problemaId, criterioId) {
 // um problema ainda parcialmente avaliado não fica artificialmente mais
 // baixo só por ter menos critérios preenchidos — compara o que já foi
 // avaliado, não pune quem está em progresso.
-export function totalPonderado(pan, problemaId) {
+function totalComPesos(pan, problemaId, pesoDe) {
   let somaPesoNota = 0;
   let somaPeso = 0;
   let avaliados = 0;
   for (const criterio of pan.criterios_ranqueamento) {
     const nota = notaDe(pan, problemaId, criterio.id);
     if (!nota) continue;
-    somaPesoNota += nota.nota * criterio.peso;
-    somaPeso += criterio.peso;
+    somaPesoNota += nota.nota * pesoDe(criterio);
+    somaPeso += pesoDe(criterio);
     avaliados += 1;
   }
   if (!somaPeso) return null;
   return { total: somaPesoNota / somaPeso, avaliados, deCriterios: pan.criterios_ranqueamento.length };
+}
+
+export function totalPonderado(pan, problemaId) {
+  return totalComPesos(pan, problemaId, (c) => c.peso);
+}
+
+function liderPara(pan, pesoDe) {
+  let melhor = null;
+  let melhorTotal = -Infinity;
+  for (const p of pan.problemas_candidatos) {
+    const t = totalComPesos(pan, p.id, pesoDe);
+    if (t && t.total > melhorTotal) {
+      melhorTotal = t.total;
+      melhor = p.id;
+    }
+  }
+  return melhor;
+}
+
+// Análise de sensibilidade (inspirada em scripts/matriz_temas.py do
+// material da aula de 2026-10-06): varia cada peso em ±10 pontos e
+// confere se o líder do ranqueamento muda — sinaliza decisão frágil
+// antes do squad escolher o finalista. Só matemática sobre o que o squad
+// já decidiu (pesos e notas), não sugere nem avalia nada por conta própria.
+export function sensibilidadeRanqueamento(pan) {
+  const liderId = liderPara(pan, (c) => c.peso);
+  const mudancas = [];
+  if (liderId && pan.criterios_ranqueamento.length >= 2) {
+    for (const criterio of pan.criterios_ranqueamento) {
+      for (const variacao of [-10, 10]) {
+        const novoPeso = Math.max(0, criterio.peso + variacao);
+        const somaAlternativa = pan.criterios_ranqueamento.reduce(
+          (soma, c) => soma + (c.id === criterio.id ? novoPeso : c.peso), 0
+        );
+        if (somaAlternativa <= 0) continue;
+        const novoLiderId = liderPara(pan, (c) => (c.id === criterio.id ? novoPeso : c.peso));
+        if (novoLiderId && novoLiderId !== liderId) {
+          mudancas.push({ criterioId: criterio.id, variacao, novoLiderId });
+        }
+      }
+    }
+  }
+  return { liderId, mudancas };
 }
 
 // Apoio (não cálculo automático — quem dá a nota final é o squad) para o
@@ -833,8 +876,33 @@ function htmlMatrizRanqueamento(pan, squad) {
         </tbody>
       </table>
     </div>
+    ${htmlSensibilidade(pan)}
     <p class="erro" id="panorama-finalista-erro" role="alert"></p>
     ${htmlFinalistaBanner(pan)}`;
+}
+
+// Inspirado no relatório de sensibilidade de scripts/matriz_temas.py
+// (material da aula de 2026-10-06): avisa quando a escolha do líder é
+// frágil a pequenas mudanças de peso, antes do squad escolher o finalista.
+function htmlSensibilidade(pan) {
+  const { liderId, mudancas } = sensibilidadeRanqueamento(pan);
+  if (!liderId) return "";
+  const nomeProblema = (id) => {
+    const p = pan.problemas_candidatos.find((x) => x.id === id);
+    const texto = p ? (p.pergunta_problema || "(sem pergunta-problema)") : id;
+    return texto.length > 60 ? `${texto.slice(0, 60)}…` : texto;
+  };
+  const nomeCriterio = (id) => pan.criterios_ranqueamento.find((c) => c.id === id)?.nome || id;
+  if (!mudancas.length) {
+    return `<p class="panorama-sensibilidade-ok dica">Decisão estável: variar qualquer peso em ±10 não troca o líder do ranqueamento.</p>`;
+  }
+  return `
+    <div class="panorama-sensibilidade" role="status">
+      <strong>Decisão sensível aos pesos</strong> — pequenas mudanças trocariam o líder:
+      <ul>
+        ${mudancas.map((m) => `<li>Peso de "${esc(nomeCriterio(m.criterioId))}" ${m.variacao > 0 ? "+10" : "−10"}: o líder passaria a ser "${esc(nomeProblema(m.novoLiderId))}"</li>`).join("")}
+      </ul>
+    </div>`;
 }
 
 function htmlFinalistaBanner(pan) {
